@@ -1,0 +1,82 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import time
+from pysc2.lib import actions
+from agents.macro_actions import action_micro
+import agents.globalvar as GL
+
+list_actions, _ = GL.get_list()
+
+# 该函数的作用是使agent和环境进行交互（根据环境选动作，有了动作后更新环境）
+def run_loop(agents, env, max_frames, ind_thread):  # agents是列表，里面有一个agent（A3CAgent对象），env是SC2Env对象经过处理后的变量，max_frames是回合内最多进行的step数
+  """A run loop to have agents and an environment interact."""
+  start_time = time.time()
+
+  try:
+    while True:   # 底下发生的是一个回合内的过程
+      GL.Set_value(ind_thread, -1)
+      num_frames = 0  # 计算回合里的step数
+      timesteps = env.reset()
+      # reset函数返回TimeStep四元组（sc2_env.py 512行），包含的信息有4种，在知乎上PySC2详解的文章里有介绍
+
+      for a in agents:  # 疑问：明明agents里只有一个agent对象，为啥要写成循环？或者说为啥一开始设计的参数要是agents(列表),而不是直接agent对象
+        a.reset()
+      while True:   # 底下发生的是回合内一步的过程
+        ind_last = GL.Get_value(ind_thread)
+        num_frames += 1
+        last_timesteps = timesteps
+        # actions = [agent.step(timestep) for agent, timestep in zip(agents, timesteps)]      # 关键一步，调用了agent对象的step方法计算出选择的action。
+
+        #DHN add:
+        # print("ind_last", ind_last)
+        if ind_last == -1 or ind_last == -99 or ind_last == 666:
+                          # ind_last == -99 (表示宏动作里的微动作执行失败)
+                          # ind_last == 666 (表示宏动作成功执行完毕）:
+          dir_high = [agent.step_high(timestep) for agent, timestep in zip(agents, timesteps)]  # dir_high是 要执行的宏动作id（从0开始）
+          GL.set_value_dir_high(ind_thread, dir_high[0])
+          GL.Set_value(ind_thread, 0)
+          ind_todo = GL.Get_value(ind_thread)
+        else:
+          temp = GL.Get_value(ind_thread)
+          GL.Set_value(ind_thread, temp+1)
+          ind_todo = GL.Get_value(ind_thread)
+
+        target_pack = [agent.step_low(timestep) for agent, timestep in zip(agents, timesteps)]
+        # print(target_pack)
+        target_0 = target_pack[0][0]
+        target_1 = target_pack[0][1]
+        # action = action_micro(target_0, target_1, dir_high[0], ind_todo)
+        action, call_step_low = action_micro(target_0, target_1, GL.get_value_dir_high(ind_thread), ind_todo)
+
+
+        # 校验：
+        flag_success = True
+        if list_actions[GL.get_value_dir_high(ind_thread)][ind_todo] not in last_timesteps[0].observation['available_actions']:
+          GL.Set_value(ind_thread, -99) # 表示宏动作里的微动作执行失败
+          action = [actions.FunctionCall(function=0, arguments=[])] # 执行no_op
+          flag_success = False
+
+        if flag_success:
+          GL.add_value_list(ind_thread, "micro_isdone", 1)
+        else:
+          GL.add_value_list(ind_thread, "micro_isdone", -1)
+
+        # 当ind_todo是最后一个需要执行的动作，且执行成功时，将ind_done[ind_thread]设为666（即宏动作成功执行完毕）
+        if ind_todo == len(list_actions[GL.get_value_dir_high(ind_thread)])-1 and flag_success:
+          GL.Set_value(ind_thread, 666)  # 表示宏动作执行到了最后一步微动作且执行成功
+
+        timesteps = env.step(action)   # env环境的step函数根据动作计算出下一个timesteps
+        # Only for a single player!
+        is_done = (num_frames >= max_frames) or timesteps[0].last()   # timesteps[0]是timesteps的第一个变量step_type（状态类型），last()为True即到了末状态
+        yield [last_timesteps[0], action[0], timesteps[0]], is_done, num_frames, call_step_low
+        # yield适用于函数返回内容较多，占用内存量很大的情况。可以看成返回了一个列表（实际不是）
+        # 详解见http://www.runoob.com/w3cnote/python-yield-used-analysis.html
+        if is_done:
+          break
+  except KeyboardInterrupt:
+    pass
+  finally:
+    elapsed_time = time.time() - start_time
+    print("Took %.3f seconds" % elapsed_time)
