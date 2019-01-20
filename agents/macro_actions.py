@@ -4,7 +4,7 @@ import agents.globalvar as GL
 list_actions, _ = GL.get_list()
 
 def action_micro(dir_high, ind_todo):
-    call_step_low = -1
+    call_step_low = False
     act_id = list_actions[dir_high][ind_todo]
     print("macro_actions", dir_high, ind_todo)
 
@@ -51,7 +51,7 @@ def action_micro(dir_high, ind_todo):
         for arg in actions.FUNCTIONS[act_id].args:  # actions是pysc2.lib中的文件 根据act_id获取其可使用的参数，并添加到args中去
             if arg.name in ('screen', 'minimap', 'screen2'):
                 # act_args.append([target_0, target_1])
-                call_step_low = 1
+                call_step_low = True
             else:
                 act_args.append([0])  # TODO: Be careful
                 action = [actions.FunctionCall(act_id, act_args)]

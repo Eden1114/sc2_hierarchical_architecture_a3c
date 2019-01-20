@@ -46,7 +46,8 @@ def run_loop(agents, env, max_frames, ind_thread):  # agents是列表，里面�
         dir_high = GL.get_value(ind_thread, "dir_high")
         action, call_step_low, act_id = action_micro(dir_high, ind_todo)
 
-        if call_step_low == 1:
+        if call_step_low == True:
+		  # target_pack = [agent.step_low(timestep, dir_high, ind_todo) for agent, timestep in zip(agents, timesteps)]
           target_pack = [agent.step_low(timestep) for agent, timestep in zip(agents, timesteps)]
           target_0 = target_pack[0][0]
           target_1 = target_pack[0][1]
