@@ -109,7 +109,7 @@ def run_thread(agent, map_name, visualize, ind_thread):  # A3CAgent对象，地�
         if call_step_low == 1:
           replay_buffer_1.append(recorder)
         replay_buffer_2.append(recorder)
-        dir_high_buffer.append([GL.get_value_dir_high(ind_thread)])
+        dir_high_buffer.append([GL.get_value(ind_thread, "dir_high")])
         if is_done:     # 若为训练模式
           with LOCK:    # 使用线程锁（跟java类似，应用于不同线程会调用相同资源的情况），给Counter和counter加一
             global COUNTER
@@ -129,7 +129,7 @@ def run_thread(agent, map_name, visualize, ind_thread):  # A3CAgent对象，地�
           replay_buffer_1 = []
 
         # 更新上层网络
-        ind_last = GL.Get_value(ind_thread)
+        ind_last = GL.get_value(ind_thread, "ind_micro")
         # if stepsInOneEp % UPDATE_ITER_HIGH == 0 or is_done:
         if ind_last == -99 or ind_last == 666:
           learning_rate_a_high = FLAGS.learning_rate * (1 - 0.9 * counter / FLAGS.max_steps)  # 根据当前进行完的回合数量修改学习速率（减小）
