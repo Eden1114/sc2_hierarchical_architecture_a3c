@@ -8,15 +8,18 @@ def low_reward(next_obs, obs, coordinate,micro_isdone,macro_type,coord_type):
   killed_value_units_change = 10 * (next_obs.observation["score_cumulative"][5] - obs.observation["score_cumulative"][5])
   killed_value_structures_change = 10 * (next_obs.observation["score_cumulative"][6] - obs.observation["score_cumulative"][6])
 
+  if micro_isdone == -1:
+      reward -= 100
+
   #坐标类型为minimap
   if coord_type==1:
       #对己方操作
       if macro_type == 0:
         dis = math.sqrt((coordinate[0] - ourside[0]) ** 2 + (coordinate[1] - ourside[1]) ** 2)
         if dis<=5:
-            reward = 1000
+            reward += 100
         else:
-            reward += 1000-dis * 100
+            reward += 100-dis * 10
 
         if build_score_change > 0:
             if build_score_change == 150:
@@ -34,7 +37,7 @@ def low_reward(next_obs, obs, coordinate,micro_isdone,macro_type,coord_type):
       #对敌方操作
       if macro_type == 1:
         dis = math.sqrt((coordinate[0]-enemyside[0])**2+(coordinate[1]-enemyside[1])**2)
-        reward += 1000 - dis * 100
+        reward += 100 - dis * 10
 
         if killed_value_units_change > 0:
             reward += killed_value_units_change
