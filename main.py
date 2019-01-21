@@ -103,13 +103,13 @@ def run_thread(agent, map_name, visualize, ind_thread):  # A3CAgent对象，地�
     dir_high_buffer = []
 
     # 下行中的run_loop是个生成器，for循环每次进入到run_loop里，得到yield后返回，继续进行循环体里的语句，for循环再次进入run_loop后从run_loop的yield的下一条语句开始执行，执行到yield再次返回，继续执行循环体语句...
-    for recorder, is_done, stepsInOneEp, call_step_low,macro_type,coord_type in run_loop([agent], env, MAX_AGENT_STEPS, ind_thread):   # 将agent对象存入[]再作为参数传递进run_loop生成器里，recorder是一个三元列表
+    for recorder, is_done, stepsInOneEp, call_step_low in run_loop([agent], env, MAX_AGENT_STEPS, ind_thread):   # 将agent对象存入[]再作为参数传递进run_loop生成器里，recorder是一个三元列表
 
       if FLAGS.training:    # 这里是if FLAGS.training，但后面并没有if not FLAGS.training。即若是非训练模式（restore了以前的网络参数），则不再进行网络参数的更新
         if call_step_low == 1:
           replay_buffer_1.append(recorder)
         replay_buffer_2.append(recorder)
-        dir_high_buffer.append([GL.get_value_dir_high(ind_thread)])
+        dir_high_buffer.append([GL.get_value(ind_thread, "dir_high")])
         if is_done:     # 若为训练模式
           with LOCK:    # 使用线程锁（跟java类似，应用于不同线程会调用相同资源的情况），给Counter和counter加一
             global COUNTER
@@ -124,12 +124,12 @@ def run_thread(agent, map_name, visualize, ind_thread):  # A3CAgent对象，地�
         if call_step_low == 1:
           learning_rate_a_low = FLAGS.learning_rate * (1 - 0.9 * counter / FLAGS.max_steps)   # 根据当前进行完的回合数量修改学习速率（减小）
           learning_rate_c_low = FLAGS.learning_rate * (1 - 0.9 * counter / FLAGS.max_steps)   # 根据当前进行完的回合数量修改学习速率（减小）
-          agent.update_low(ind_thread,replay_buffer_1, FLAGS.discount, learning_rate_a_low, learning_rate_c_low, counter,macro_type,coord_type)
+          agent.update_low(replay_buffer_1, FLAGS.discount, learning_rate_a_low, learning_rate_c_low, counter)
           # time.sleep(2)
           replay_buffer_1 = []
 
         # 更新上层网络
-        ind_last = GL.Get_value(ind_thread)
+        ind_last = GL.get_value(ind_thread, "ind_micro")
         # if stepsInOneEp % UPDATE_ITER_HIGH == 0 or is_done:
         if ind_last == -99 or ind_last == 666:
           learning_rate_a_high = FLAGS.learning_rate * (1 - 0.9 * counter / FLAGS.max_steps)  # 根据当前进行完的回合数量修改学习速率（减小）

@@ -385,7 +385,7 @@ class A3CAgent(object):
     self.summary_writer.add_summary(summary, cter)
 
 
-  def update_low(self, ind_thread,rbs, disc, lr_a, lr_c, cter,macro_type,coord_type):
+  def update_low(self, rbs, disc, lr_a, lr_c, cter):
     # rbs(replayBuffers)是[last_timesteps[0], actions[0], timesteps[0]]的集合（agent在一回合里进行了多少step就有多少个），具体见run_loop25行
 
     # Compute R, which is value of the last observation
@@ -417,9 +417,6 @@ class A3CAgent(object):
     spatial_action_selected = np.zeros([len(rbs), self.ssize**2], dtype=np.float32) # 含义是每一个step需不需要坐标参数（第一维上），且具体坐标参数是什么（第二维上）
 
     rbs.reverse()  # 先reverse 与莫烦A3C_continuous_action.py的代码类似
-    micro_isdone = GL.get_value(ind_thread, "micro_isdone")
-    micro_isdone.reverse()
-
     for i, [obs, action, next_obs] in enumerate(rbs):   # agent在回合里进行了多少步，就进行多少轮循环
       minimap = np.array(obs.observation['feature_minimap'], dtype=np.float32)  # 类似105-111行
       minimap = np.expand_dims(U.preprocess_minimap(minimap), axis=0)
@@ -432,10 +429,7 @@ class A3CAgent(object):
       screens.append(screen)
       infos.append(info)
 
-      #reward = obs.reward
-      coord = []
-      coord[0],coord[1] = self.step_low(obs)
-      reward = low_reward(next_obs, obs,coord,micro_isdone[i],macro_type,coord_type)
+      reward = obs.reward
       act_id = action.function  # Agent在这一步中选择动作的id序号
       act_args = action.arguments
 
