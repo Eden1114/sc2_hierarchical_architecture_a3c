@@ -8,6 +8,8 @@ import tensorflow as tf
 from pysc2.lib import actions
 from pysc2.lib import features
 
+from agents.network import build_net
+
 #DHN add:
 from agents.network import build_high_net
 from agents.network import build_low_net
@@ -23,20 +25,11 @@ _, num_macro_action = GL.get_list()
 
 class A3CAgent(object):
   """An agent specifically for solving the mini-game maps."""
-  
-  def __init__(self, training, msize, ssize, name='A3C/A3CAgent'):  
-    '''[summary]
-    参数为
-    是否为训练模式（bool值）
-    minimap分辨率（64，整型）
-    screen分辨率（64，整型）
-    '''
-
+  def __init__(self, training, msize, ssize, name='A3C/A3CAgent'):  # 参数为是否为训练模式（bool值），minimap尺寸（64，整型），screen尺寸（64，整型）
     self.name = name
     self.training = training
     self.summary_low = []
     self.summary_high = []
-    
     # Minimap size, screen size and info size
     assert msize == ssize
     self.msize = msize
@@ -61,8 +54,7 @@ class A3CAgent(object):
 
   def build_model(self, reuse, dev, ntype):
     with tf.variable_scope(self.name) and tf.device(dev):
-      if reuse:   
-        #比如训练模式下4线程，除了第一个build_model的reuse是False以外，其他的均为True（main文件 124行）
+      if reuse:   #比如训练模式下4线程，除了第一个build_model的reuse是False以外，其他的均为True（main文件 124行）
         tf.get_variable_scope().reuse_variables()
         assert tf.get_variable_scope().reuse
 

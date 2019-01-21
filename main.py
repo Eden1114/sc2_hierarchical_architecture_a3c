@@ -35,9 +35,9 @@ flags.DEFINE_integer("max_steps", int(1e5), "Total steps for training.")    # �
 flags.DEFINE_integer("snapshot_step", int(1e3), "Step for snapshot.")
 flags.DEFINE_string("snapshot_path", "./snapshot/", "Path for snapshot.")
 flags.DEFINE_string("log_path", "./log/", "Path for log.")
-# 这里的Device每个机器运行的时候都不一样，依据配置设定
 flags.DEFINE_string("device", "0", "Device for training.")
 
+#flags.DEFINE_string("map", "MoveToBeacon", "Name of a map to use.")    # 该工程原代码
 flags.DEFINE_string("map", "Simple64", "Name of a map to use.")         # 2018/08/03: Simple64枪兵互拼新加代码
 
 flags.DEFINE_bool("render", True, "Whether to render with pygame.")
@@ -59,8 +59,7 @@ flags.DEFINE_enum("difficulty", "very_easy", sc2_env.Difficulty._member_names_, 
 flags.DEFINE_integer("max_agent_steps", 10000, "Total agent steps.")       # 这里的step指的是回合episode里的那个step
 flags.DEFINE_bool("profile", False, "Whether to turn on code profiling.")
 flags.DEFINE_bool("trace", False, "Whether to trace the code execution.")
-# 线程数
-flags.DEFINE_integer("parallel", 2, "How many instances to run in parallel.")
+flags.DEFINE_integer("parallel", 1, "How many instances to run in parallel.")
 flags.DEFINE_bool("save_replay", False, "Whether to save a replay at the end.")
 
 FLAGS(sys.argv)
