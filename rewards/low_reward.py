@@ -1,5 +1,5 @@
 import math
-def low_reward(next_obs, obs, coordinate,micro_isdone,macro_type,coord_type):
+def low_reward(next_obs, obs, type_of_action, coordinate):
   reward = 0
   ourside=[20,25]
   enemyside=[52,49]
@@ -9,7 +9,7 @@ def low_reward(next_obs, obs, coordinate,micro_isdone,macro_type,coord_type):
   killed_value_structures_change = 10 * (next_obs.observation["score_cumulative"][6] - obs.observation["score_cumulative"][6])
 
   #对己方操作
-  if macro_type == 0:
+  if type_of_action == 0:
     dis = math.sqrt((coordinate[0] - ourside[0]) ** 2 + (coordinate[1] - ourside[1]) ** 2)
     reward = 1000-dis * 100
 
@@ -25,7 +25,7 @@ def low_reward(next_obs, obs, coordinate,micro_isdone,macro_type,coord_type):
     return reward
 
   #对敌方操作
-  if macro_type == 1:
+  if type_of_action == 1:
     dis = math.sqrt((coordinate[0]-enemyside[0])**2+(coordinate[1]-enemyside[1])**2)
     reward -= 1000 - dis * 100
 
