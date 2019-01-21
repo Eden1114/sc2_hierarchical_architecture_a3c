@@ -8,8 +8,6 @@ import tensorflow as tf
 from pysc2.lib import actions
 from pysc2.lib import features
 
-from agents.network import build_net
-
 #DHN add:
 from agents.network import build_high_net
 from agents.network import build_low_net
@@ -25,11 +23,20 @@ _, num_macro_action = GL.get_list()
 
 class A3CAgent(object):
   """An agent specifically for solving the mini-game maps."""
-  def __init__(self, training, msize, ssize, name='A3C/A3CAgent'):  # 参数为是否为训练模式（bool值），minimap尺寸（64，整型），screen尺寸（64，整型）
+  
+  def __init__(self, training, msize, ssize, name='A3C/A3CAgent'):  
+    '''[summary]
+    参数为
+    是否为训练模式（bool值）
+    minimap分辨率（64，整型）
+    screen分辨率（64，整型）
+    '''
+
     self.name = name
     self.training = training
     self.summary_low = []
     self.summary_high = []
+    
     # Minimap size, screen size and info size
     assert msize == ssize
     self.msize = msize
@@ -54,7 +61,8 @@ class A3CAgent(object):
 
   def build_model(self, reuse, dev, ntype):
     with tf.variable_scope(self.name) and tf.device(dev):
-      if reuse:   #比如训练模式下4线程，除了第一个build_model的reuse是False以外，其他的均为True（main文件 124行）
+      if reuse:   
+        #比如训练模式下4线程，除了第一个build_model的reuse是False以外，其他的均为True（main文件 124行）
         tf.get_variable_scope().reuse_variables()
         assert tf.get_variable_scope().reuse
 
@@ -62,7 +70,8 @@ class A3CAgent(object):
       self.minimap = tf.placeholder(tf.float32, [None, U.minimap_channel(), self.msize, self.msize], name='minimap')
       self.screen = tf.placeholder(tf.float32, [None, U.screen_channel(), self.ssize, self.ssize], name='screen')
       self.info = tf.placeholder(tf.float32, [None, self.isize], name='info')
-
+      self.dir_high_usedToFeedLowNet = tf.placeholder(tf.int32, [1, 1], name='dir_high_usedToFeedLowNet')
+      self.act_id = tf.placeholder(tf.int32, [1, 1], name='act_id')
 
       # Build networks
       # net = build_net(self.minimap, self.screen, self.info, self.msize, self.ssize, len(actions.FUNCTIONS), ntype)  # build_net函数从network.py中引入
@@ -71,7 +80,7 @@ class A3CAgent(object):
 
       # DHN add:
       self.dir_high, self.value_high, self.a_params_high, self.c_params_high = build_high_net(self.minimap, self.screen, self.info, num_macro_action)
-      self.spatial_action_low, self.value_low, self.a_params_low, self.c_params_low = build_low_net(self.minimap, self.screen, self.info)
+      self.spatial_action_low, self.value_low, self.a_params_low, self.c_params_low = build_low_net(self.minimap, self.screen, self.info, self.dir_high_usedToFeedLowNet, self.act_id)
 
 
       # Set targets and masks
@@ -260,7 +269,7 @@ class A3CAgent(object):
     return dir_high_id
 
 
-  def step_low(self, obs):
+  def step_low(self, ind_thread, obs, dir_high, act_id):
     # obs就是环境传入的timestep
     minimap = np.array(obs.observation['feature_minimap'], dtype=np.float32)  # 以下4行将minimap和screen的特征做一定处理后分别保存在minimap和screen变量中
     minimap = np.expand_dims(U.preprocess_minimap(minimap), axis=0)         # 这四行具体语法暂未研究
@@ -269,10 +278,16 @@ class A3CAgent(object):
     # TODO: only use available actions
     info = np.zeros([1, self.isize], dtype=np.float32)  # self.isize值是动作函数的数量
     info[0, obs.observation['available_actions']] = 1   # info存储可执行的动作。
+    dir_high_usedToFeedLowNet = np.ones([1, 1], dtype=np.int32)
+    dir_high_usedToFeedLowNet[0][0] = dir_high
+    act_ID = np.ones([1, 1], dtype=np.int32)
+    act_ID[0][0] = act_id
 
     feed = {self.minimap: minimap,
             self.screen: screen,
-            self.info: info}
+            self.info: info,
+            self.dir_high_usedToFeedLowNet: dir_high_usedToFeedLowNet,
+            self.act_id: act_ID}
     spatial_action_low = self.sess.run( # 数据类型：Tensor("actor_low/Softmax:0", shape=(?, 4096), dtype=float32, device=/device:GPU:0)
                                         # [array([[0.00019935, 0.00025348, 0.00024519, ..., 0.00016189, 0.00016014, 0.00016842]], dtype=float32)]
       [self.spatial_action_low],
@@ -385,7 +400,7 @@ class A3CAgent(object):
     self.summary_writer.add_summary(summary, cter)
 
 
-  def update_low(self, rbs, disc, lr_a, lr_c, cter):
+  def update_low(self, ind_thread, rbs, dhs,  disc, lr_a, lr_c, cter):
     # rbs(replayBuffers)是[last_timesteps[0], actions[0], timesteps[0]]的集合（agent在一回合里进行了多少step就有多少个），具体见run_loop25行
 
     # Compute R, which is value of the last observation
@@ -400,15 +415,25 @@ class A3CAgent(object):
       info = np.zeros([1, self.isize], dtype=np.float32)
       info[0, obs.observation['available_actions']] = 1
 
+      dir_high_usedToFeedLowNet = np.ones([1, 1], dtype=np.int32)
+      dir_high_usedToFeedLowNet[0][0] = dhs[0]
+      act_ID = np.ones([1, 1], dtype=np.int32)
+      act_ID[0][0] = rbs[-1][1].function
+
       feed = {self.minimap: minimap,
               self.screen: screen,
-              self.info: info}
+              self.info: info,
+              self.dir_high_usedToFeedLowNet: dir_high_usedToFeedLowNet,
+              self.act_id: act_ID,
+              }
       R = self.sess.run(self.value_low, feed_dict=feed)[0]
 
     # Compute targets and masks
     minimaps = []
     screens = []
     infos = []
+    dir_highs = []
+    act_ids = []
 
     value_target = np.zeros([len(rbs)], dtype=np.float32)   # len(rbs) 计算出agent在回合里总共进行的步数
     value_target[-1] = R
@@ -443,14 +468,27 @@ class A3CAgent(object):
           valid_spatial_action[i] = 1
           spatial_action_selected[i, ind] = 1
 
+      dir_high_usedToFeedLowNet = np.ones([1, 1], dtype=np.int32)
+      dir_high_usedToFeedLowNet[0][0] = dhs[i]
+      act_ID = np.ones([1, 1], dtype=np.int32)
+      act_ID[0][0] = act_id
+      dir_highs.append(dir_high_usedToFeedLowNet)
+      act_ids.append(act_ID)
+
     minimaps = np.concatenate(minimaps, axis=0)
     screens = np.concatenate(screens, axis=0)
     infos = np.concatenate(infos, axis=0)
+
+    # 实际上由于low_net是单步更新策略，所以以下feed的参数里面都只有一帧的数据
 
     # Train
     feed = {self.minimap: minimaps,
             self.screen: screens,
             self.info: infos,
+            # self.dir_high_usedToFeedLowNet: dir_highs,
+            self.dir_high_usedToFeedLowNet: dir_high_usedToFeedLowNet,
+            # self.act_id: act_ids,
+            self.act_id: act_ID,
             self.value_target_low: value_target,
             self.valid_spatial_action_low: valid_spatial_action,
             self.spatial_action_selected_low: spatial_action_selected,
