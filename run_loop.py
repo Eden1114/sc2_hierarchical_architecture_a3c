@@ -47,14 +47,14 @@ def run_loop(agents, env, max_frames, ind_thread):  # agents是列表，里面�
         action, call_step_low, act_id = action_micro(dir_high, ind_todo)
 
         if call_step_low == True:
-		  # target_pack = [agent.step_low(timestep, dir_high, ind_todo) for agent, timestep in zip(agents, timesteps)]
+        # target_pack = [agent.step_low(timestep, dir_high, ind_todo) for agent, timestep in zip(agents, timesteps)]
           target_pack = [agent.step_low(timestep) for agent, timestep in zip(agents, timesteps)]
           target_0 = target_pack[0][0]
           target_1 = target_pack[0][1]
           act_args = []
           for arg in actions.FUNCTIONS[act_id].args:  # actions是pysc2.lib中的文件 根据act_id获取其可使用的参数，并添加到args中去
             if arg.name in ('screen', 'minimap', 'screen2'):
-              act_args.append([target_0, target_1])
+              act_args.append([target_1, target_0])
             else:
               act_args.append([0])  # TODO: Be careful
             action = [actions.FunctionCall(act_id, act_args)]
