@@ -44,7 +44,7 @@ def run_loop(agents, env, max_frames, ind_thread):  # agents是列表，里面�
           ind_todo = GL.get_value(ind_thread, "ind_micro")
 
         dir_high = GL.get_value(ind_thread, "dir_high")
-        action, call_step_low, act_id = action_micro(dir_high, ind_todo)
+        action, call_step_low,act_id,macro_type,coord_type = action_micro(dir_high, ind_todo)
 
         if call_step_low == True:
 		  # target_pack = [agent.step_low(timestep, dir_high, ind_todo) for agent, timestep in zip(agents, timesteps)]
@@ -78,7 +78,7 @@ def run_loop(agents, env, max_frames, ind_thread):  # agents是列表，里面�
         timesteps = env.step(action)   # env环境的step函数根据动作计算出下一个timesteps
         # Only for a single player!
         is_done = (num_frames >= max_frames) or timesteps[0].last()   # timesteps[0]是timesteps的第一个变量step_type（状态类型），last()为True即到了末状态
-        yield [last_timesteps[0], action[0], timesteps[0]], is_done, num_frames, call_step_low
+        yield [last_timesteps[0], action[0], timesteps[0]], is_done, num_frames, call_step_low,macro_type,coord_type
         # yield适用于函数返回内容较多，占用内存量很大的情况。可以看成返回了一个列表（实际不是）
         # 详解见http://www.runoob.com/w3cnote/python-yield-used-analysis.html
         if is_done:
