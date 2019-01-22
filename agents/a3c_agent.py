@@ -418,7 +418,10 @@ class A3CAgent(object):
       dir_high_usedToFeedLowNet = np.ones([1, 1], dtype=np.int32)
       dir_high_usedToFeedLowNet[0][0] = dhs[0]
       act_ID = np.ones([1, 1], dtype=np.int32)
-      act_ID[0][0] = rbs[-1][1].function
+      # act_ID[0][0] = rbs[-1][1].function
+      # 之所以不能用rbs里的action信息，是因为rbs里的action可能是no_op(由于出现动作not valid/不合法的情况，为了使游戏不崩掉而不得不这么办的补救措施)
+      # 但这里要输入的act_id应该是step_low算出来的act_id
+      act_ID[0][0] = GL.get_value(ind_thread, "act_id_micro")
 
       feed = {self.minimap: minimap,
               self.screen: screen,
@@ -471,9 +474,13 @@ class A3CAgent(object):
       dir_high_usedToFeedLowNet = np.ones([1, 1], dtype=np.int32)
       dir_high_usedToFeedLowNet[0][0] = dhs[i]
       act_ID = np.ones([1, 1], dtype=np.int32)
-      act_ID[0][0] = act_id
-      dir_highs.append(dir_high_usedToFeedLowNet)
-      act_ids.append(act_ID)
+      # act_ID[0][0] = act_id
+      # 之所以不能用rbs里的action信息，是因为rbs里的action可能是no_op(由于出现动作not valid/不合法的情况，为了使游戏不崩掉而不得不这么办的补救措施)
+      # 但这里要输入的act_id应该是step_low算出来的act_id
+      act_ID[0][0] = GL.get_value(ind_thread, "act_id_micro")
+
+      # dir_highs.append(dir_high_usedToFeedLowNet)
+      # act_ids.append(act_ID)
 
     minimaps = np.concatenate(minimaps, axis=0)
     screens = np.concatenate(screens, axis=0)

@@ -3,7 +3,7 @@ def global_init(index):
     global_var_dict = []
 
     for i in range(index):
-        dict = {"num_frames": -9999, "ind_micro": -9999, "dir_high": -9999, "supply_num": -9999, "barrack_num": -9999, "brrack_location": [],
+        dict = {"num_frames": -9999, "ind_micro": -9999, "act_id_micro": -9999, "dir_high": -9999, "supply_num": -9999, "barrack_num": -9999, "brrack_location": [],
                 "micro_isdone":[]}
         # micro_isdone 成功是1，失败是-1
         global_var_dict.append(dict)

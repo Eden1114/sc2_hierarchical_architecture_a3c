@@ -45,8 +45,11 @@ def run_loop(agents, env, max_frames, ind_thread):  # agents是列表，里面�
 
         dir_high = GL.get_value(ind_thread, "dir_high")
         action, call_step_low, act_id = action_micro(dir_high, ind_todo)
+        # 如果call_step_low为False，则act_id没用了，直接使用上行中的action
+        # 如果其为True，则进入以下的模块，action没用了，act_id被使用来计算新的action
 
         if call_step_low == True:
+          GL.set_value(ind_thread, "act_id_micro", act_id)
           target_pack = [agent.step_low(ind_thread, timestep, dir_high, act_id) for agent, timestep in zip(agents, timesteps)]
           # target_pack = [agent.step_low(ind_thread, timestep) for agent, timestep in zip(agents, timesteps)]
           target_0 = target_pack[0][0]
