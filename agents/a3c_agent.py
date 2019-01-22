@@ -70,8 +70,8 @@ class A3CAgent(object):
       self.minimap = tf.placeholder(tf.float32, [None, U.minimap_channel(), self.msize, self.msize], name='minimap')
       self.screen = tf.placeholder(tf.float32, [None, U.screen_channel(), self.ssize, self.ssize], name='screen')
       self.info = tf.placeholder(tf.float32, [None, self.isize], name='info')
-      self.dir_high_usedToFeedLowNet = tf.placeholder(tf.int32, [1, 1], name='dir_high_usedToFeedLowNet')
-      self.act_id = tf.placeholder(tf.int32, [1, 1], name='act_id')
+      self.dir_high_usedToFeedLowNet = tf.placeholder(tf.float32, [1, 1], name='dir_high_usedToFeedLowNet')
+      self.act_id = tf.placeholder(tf.float32, [1, 1], name='act_id')
 
       # Build networks
       # net = build_net(self.minimap, self.screen, self.info, self.msize, self.ssize, len(actions.FUNCTIONS), ntype)  # build_net函数从network.py中引入
@@ -278,9 +278,9 @@ class A3CAgent(object):
     # TODO: only use available actions
     info = np.zeros([1, self.isize], dtype=np.float32)  # self.isize值是动作函数的数量
     info[0, obs.observation['available_actions']] = 1   # info存储可执行的动作。
-    dir_high_usedToFeedLowNet = np.ones([1, 1], dtype=np.int32)
+    dir_high_usedToFeedLowNet = np.ones([1, 1], dtype=np.float32)
     dir_high_usedToFeedLowNet[0][0] = dir_high
-    act_ID = np.ones([1, 1], dtype=np.int32)
+    act_ID = np.ones([1, 1], dtype=np.float32)
     act_ID[0][0] = act_id
 
     feed = {self.minimap: minimap,
@@ -415,9 +415,9 @@ class A3CAgent(object):
       info = np.zeros([1, self.isize], dtype=np.float32)
       info[0, obs.observation['available_actions']] = 1
 
-      dir_high_usedToFeedLowNet = np.ones([1, 1], dtype=np.int32)
+      dir_high_usedToFeedLowNet = np.ones([1, 1], dtype=np.float32)
       dir_high_usedToFeedLowNet[0][0] = dhs[0]
-      act_ID = np.ones([1, 1], dtype=np.int32)
+      act_ID = np.ones([1, 1], dtype=np.float32)
       # act_ID[0][0] = rbs[-1][1].function
       # 之所以不能用rbs里的action信息，是因为rbs里的action可能是no_op(由于出现动作not valid/不合法的情况，为了使游戏不崩掉而不得不这么办的补救措施)
       # 但这里要输入的act_id应该是step_low算出来的act_id
@@ -471,9 +471,9 @@ class A3CAgent(object):
           valid_spatial_action[i] = 1
           spatial_action_selected[i, ind] = 1
 
-      dir_high_usedToFeedLowNet = np.ones([1, 1], dtype=np.int32)
+      dir_high_usedToFeedLowNet = np.ones([1, 1], dtype=np.float32)
       dir_high_usedToFeedLowNet[0][0] = dhs[i]
-      act_ID = np.ones([1, 1], dtype=np.int32)
+      act_ID = np.ones([1, 1], dtype=np.float32)
       # act_ID[0][0] = act_id
       # 之所以不能用rbs里的action信息，是因为rbs里的action可能是no_op(由于出现动作not valid/不合法的情况，为了使游戏不崩掉而不得不这么办的补救措施)
       # 但这里要输入的act_id应该是step_low算出来的act_id
