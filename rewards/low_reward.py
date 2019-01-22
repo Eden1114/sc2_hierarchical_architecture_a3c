@@ -1,5 +1,5 @@
 import math
-def low_reward(next_obs, obs, coordinate,micro_isdone,macro_type,coord_type):
+def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type):
   reward = 0
   ourside=[20,25]
   enemyside=[52,49]
@@ -8,8 +8,12 @@ def low_reward(next_obs, obs, coordinate,micro_isdone,macro_type,coord_type):
   killed_value_units_change = 10 * (next_obs.observation["score_cumulative"][5] - obs.observation["score_cumulative"][5])
   killed_value_structures_change = 10 * (next_obs.observation["score_cumulative"][6] - obs.observation["score_cumulative"][6])
 
-  if micro_isdone == -1:
+  # if micro_isdone == -1:
+  #     reward -= 100
+  if not len(obs.observation.last_actions):
       reward -= 100
+      # ！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+      # last_actions为[],代表动作函数合法但失败（比如造补给站在available_action_list里，但选的建造坐标在基地的位置上，则造不出来）
 
   #坐标类型为minimap
   if coord_type==1:

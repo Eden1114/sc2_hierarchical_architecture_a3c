@@ -25,15 +25,14 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
     # print("workernumber ", obs.observation.player.food_workers)
     # print("num_frames is",gl.get_value("num_frames"))
 
-    # 动作执行成功或失败
+    # 动作执行成功或失败：micro_is_done出现-1的情况，就说明宏动作失败了（出现微动作id不在available_action_list里的情况）
+    # 同时，切记！ micro_is_done为1时，不要给正奖励，因为这不能说明宏动作是成功了还是失败了
     if micro_isdone == -1:
-      reward -= 100
-    # if micro_isdone == 1:
-    #   reward += 100
+      reward -= 666
 
     if action.function is 140 or 143 or 144 or 168:  # 如果是取消类动作
         reward -= 10
-    if not len(obs.observation.last_actions):  # 如果没有有效操作 该操作待议
+    if not len(obs.observation.last_actions) and action.function != 0:  # 如果没有有效操作 该操作待议
         reward -= 10
 
     #矿变化相关reward

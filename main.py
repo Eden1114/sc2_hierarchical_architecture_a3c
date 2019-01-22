@@ -32,12 +32,12 @@ flags.DEFINE_bool("continuation", False, "Continuously training.")
 flags.DEFINE_float("learning_rate", 5e-4, "Learning rate for training.")
 flags.DEFINE_float("discount", 0.99, "Discount rate for future rewards.")
 flags.DEFINE_integer("max_steps", int(1e5), "Total steps for training.")    # 这里的step指的是训练的最大回合数，而不是回合episode里的那个step
-flags.DEFINE_integer("snapshot_step", int(1e3), "Step for snapshot.")
+flags.DEFINE_integer("snapshot_step", int(20), "Step for snapshot.")
 flags.DEFINE_string("snapshot_path", "./snapshot/", "Path for snapshot.")
 flags.DEFINE_string("log_path", "./log/", "Path for log.")
+# 这里的Device每个机器运行的时候都不一样，依据配置设定
 flags.DEFINE_string("device", "0", "Device for training.")
 
-#flags.DEFINE_string("map", "MoveToBeacon", "Name of a map to use.")    # 该工程原代码
 flags.DEFINE_string("map", "Simple64", "Name of a map to use.")         # 2018/08/03: Simple64枪兵互拼新加代码
 
 flags.DEFINE_bool("render", True, "Whether to render with pygame.")
@@ -59,7 +59,8 @@ flags.DEFINE_enum("difficulty", "very_easy", sc2_env.Difficulty._member_names_, 
 flags.DEFINE_integer("max_agent_steps", 10000, "Total agent steps.")       # 这里的step指的是回合episode里的那个step
 flags.DEFINE_bool("profile", False, "Whether to turn on code profiling.")
 flags.DEFINE_bool("trace", False, "Whether to trace the code execution.")
-flags.DEFINE_integer("parallel", 1, "How many instances to run in parallel.")
+# 线程数
+flags.DEFINE_integer("parallel", 5, "How many instances to run in parallel.")
 flags.DEFINE_bool("save_replay", False, "Whether to save a replay at the end.")
 
 FLAGS(sys.argv)
@@ -98,18 +99,22 @@ def run_thread(agent, map_name, visualize, ind_thread):  # A3CAgent对象，地�
 
     # Only for a single player!
     counter = 0
-    replay_buffer_1 = []  # 1供下层网络更新时使用
-    replay_buffer_2 = []  # 2供上层网络更新时使用
-    dir_high_buffer = []
+    # 后缀1供下层网络更新时使用， 后缀2供上层网络更新时使用
+    replay_buffer_1 = []
+    dir_high_buffer_1 = []
+    replay_buffer_2 = []
+    dir_high_buffer_2 = []
 
     # 下行中的run_loop是个生成器，for循环每次进入到run_loop里，得到yield后返回，继续进行循环体里的语句，for循环再次进入run_loop后从run_loop的yield的下一条语句开始执行，执行到yield再次返回，继续执行循环体语句...
-    for recorder, is_done, stepsInOneEp, call_step_low,macro_type,coord_type in run_loop([agent], env, MAX_AGENT_STEPS, ind_thread):   # 将agent对象存入[]再作为参数传递进run_loop生成器里，recorder是一个三元列表
+    for recorder, is_done, stepsInOneEp, call_step_low, macro_type, coord_type in run_loop([agent], env, MAX_AGENT_STEPS, ind_thread):   # 将agent对象存入[]再作为参数传递进run_loop生成器里，recorder是一个三元列表
 
       if FLAGS.training:    # 这里是if FLAGS.training，但后面并没有if not FLAGS.training。即若是非训练模式（restore了以前的网络参数），则不再进行网络参数的更新
-        if call_step_low == 1:
+        if call_step_low:
           replay_buffer_1.append(recorder)
+          dir_high_buffer_1.append(GL.get_value(ind_thread, "dir_high"))
         replay_buffer_2.append(recorder)
-        dir_high_buffer.append([GL.get_value(ind_thread, "dir_high")])
+        dir_high_buffer_2.append([GL.get_value(ind_thread, "dir_high")])
+
         if is_done:     # 若为训练模式
           with LOCK:    # 使用线程锁（跟java类似，应用于不同线程会调用相同资源的情况），给Counter和counter加一
             global COUNTER
@@ -121,13 +126,13 @@ def run_thread(agent, map_name, visualize, ind_thread):  # A3CAgent对象，地�
 
         # 更新下层网络
         # if stepsInOneEp % UPDATE_ITER_LOW == 0 or is_done:
-        if call_step_low == 1:
+        if call_step_low:
           learning_rate_a_low = FLAGS.learning_rate * (1 - 0.9 * counter / FLAGS.max_steps)   # 根据当前进行完的回合数量修改学习速率（减小）
           learning_rate_c_low = FLAGS.learning_rate * (1 - 0.9 * counter / FLAGS.max_steps)   # 根据当前进行完的回合数量修改学习速率（减小）
-          agent.update_low(ind_thread,replay_buffer_1, FLAGS.discount, learning_rate_a_low, learning_rate_c_low, counter,macro_type,coord_type)
-
+          agent.update_low(ind_thread, replay_buffer_1, dir_high_buffer_1, FLAGS.discount, learning_rate_a_low, learning_rate_c_low, counter, macro_type, coord_type)
           # time.sleep(2)
           replay_buffer_1 = []
+          dir_high_buffer_1 = []
 
         # 更新上层网络
         ind_last = GL.get_value(ind_thread, "ind_micro")
@@ -135,10 +140,10 @@ def run_thread(agent, map_name, visualize, ind_thread):  # A3CAgent对象，地�
         if ind_last == -99 or ind_last == 666:
           learning_rate_a_high = FLAGS.learning_rate * (1 - 0.9 * counter / FLAGS.max_steps)  # 根据当前进行完的回合数量修改学习速率（减小）
           learning_rate_c_high = FLAGS.learning_rate * (1 - 0.9 * counter / FLAGS.max_steps)  # 根据当前进行完的回合数量修改学习速率（减小）
-          agent.update_high(ind_thread, replay_buffer_2, dir_high_buffer, FLAGS.discount, learning_rate_a_high, learning_rate_c_high, counter)
+          agent.update_high(ind_thread, replay_buffer_2, dir_high_buffer_2, FLAGS.discount, learning_rate_a_high, learning_rate_c_high, counter)
           # time.sleep(2)
           replay_buffer_2 = []
-          dir_high_buffer = []
+          dir_high_buffer_2 = []
 
         if is_done:
           if counter % FLAGS.snapshot_step == 1:    # 到规定回合数存储网络参数（tf.train.Saver().save(),见a3c_agent）

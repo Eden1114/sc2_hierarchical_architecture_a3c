@@ -44,17 +44,20 @@ def run_loop(agents, env, max_frames, ind_thread):  # agents是列表，里面�
           ind_todo = GL.get_value(ind_thread, "ind_micro")
 
         dir_high = GL.get_value(ind_thread, "dir_high")
-        action, call_step_low,act_id,macro_type,coord_type = action_micro(dir_high, ind_todo)
+        action, call_step_low, act_id, macro_type, coord_type = action_micro(dir_high, ind_todo)
+        # 如果call_step_low为False，则act_id没用了，直接使用上行中的action
+        # 如果其为True，则进入以下的模块，action没用了，act_id被使用来计算新的action
 
         if call_step_low == True:
-		  # target_pack = [agent.step_low(timestep, dir_high, ind_todo) for agent, timestep in zip(agents, timesteps)]
-          target_pack = [agent.step_low(timestep) for agent, timestep in zip(agents, timesteps)]
+          GL.set_value(ind_thread, "act_id_micro", act_id)
+          target_pack = [agent.step_low(ind_thread, timestep, dir_high, act_id) for agent, timestep in zip(agents, timesteps)]
+          # target_pack = [agent.step_low(ind_thread, timestep) for agent, timestep in zip(agents, timesteps)]
           target_0 = target_pack[0][0]
           target_1 = target_pack[0][1]
           act_args = []
           for arg in actions.FUNCTIONS[act_id].args:  # actions是pysc2.lib中的文件 根据act_id获取其可使用的参数，并添加到args中去
             if arg.name in ('screen', 'minimap', 'screen2'):
-              act_args.append([target_0, target_1])
+              act_args.append([target_1, target_0])
             else:
               act_args.append([0])  # TODO: Be careful
             action = [actions.FunctionCall(act_id, act_args)]
@@ -62,7 +65,7 @@ def run_loop(agents, env, max_frames, ind_thread):  # agents是列表，里面�
         # 校验：
         flag_success = True
         if list_actions[dir_high][ind_todo] not in last_timesteps[0].observation['available_actions']:
-          GL.set_value(ind_thread, "ind_micro", -99) # 表示宏动作里的微动作执行失败
+          GL.set_value(ind_thread, "ind_micro", -99)  # 表示宏动作里的微动作执行失败
           action = [actions.FunctionCall(function=0, arguments=[])] # 执行no_op
           flag_success = False
 
@@ -76,9 +79,15 @@ def run_loop(agents, env, max_frames, ind_thread):  # agents是列表，里面�
           GL.set_value(ind_thread, "ind_micro", 666)  # 表示宏动作执行到了最后一步微动作且执行成功
 
         timesteps = env.step(action)   # env环境的step函数根据动作计算出下一个timesteps
+
+        # 如下模块表示：动作函数合法但失败（比如造补给站在available_action_list里，但选的建造坐标在基地的位置上，则造不出来）
+        # 则将ind_micro置为-99，表示“宏动作执行失败”
+        if call_step_low and len( timesteps[0].observation.last_actions ) == 0:
+          GL.set_value(ind_thread, "ind_micro", -99)
+
         # Only for a single player!
         is_done = (num_frames >= max_frames) or timesteps[0].last()   # timesteps[0]是timesteps的第一个变量step_type（状态类型），last()为True即到了末状态
-        yield [last_timesteps[0], action[0], timesteps[0]], is_done, num_frames, call_step_low,macro_type,coord_type
+        yield [last_timesteps[0], action[0], timesteps[0]], is_done, num_frames, call_step_low, macro_type, coord_type
         # yield适用于函数返回内容较多，占用内存量很大的情况。可以看成返回了一个列表（实际不是）
         # 详解见http://www.runoob.com/w3cnote/python-yield-used-analysis.html
         if is_done:
