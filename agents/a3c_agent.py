@@ -311,6 +311,8 @@ class A3CAgent(object):
     rbs.reverse()  # 先reverse 与莫烦A3C_continuous_action.py的代码类似
     micro_isdone = GL.get_value(ind_thread, "micro_isdone")
     micro_isdone.reverse()
+
+    sum_low_reward = GL.get_value(ind_thread,"sum_low_reward")
     for i, [obs, action, next_obs] in enumerate(rbs):   # agent在回合里进行了多少步，就进行多少轮循环
       minimap = np.array(obs.observation['feature_minimap'], dtype=np.float32)  # 类似105-111行
       minimap = np.expand_dims(U.preprocess_minimap(minimap), axis=0)
@@ -337,6 +339,7 @@ class A3CAgent(object):
       # coord[0], coord[1] = [32, 32]
       coord[0], coord[1] = self.step_low(ind_thread, obs, dir_high_usedToFeedLowNet, act_ID)
       reward = low_reward(next_obs, obs, coord, micro_isdone[i], macro_type, coord_type)
+      sum_low_reward += reward
 
       act_id = action.function  # Agent在这一步中选择动作的id序号
       act_args = action.arguments
@@ -351,6 +354,7 @@ class A3CAgent(object):
           valid_spatial_action[i] = 1
           spatial_action_selected[i, ind] = 1
 
+    GL.set_value(ind_thread, "sum_low_reward", sum_low_reward)
 
 
     minimaps = np.concatenate(minimaps, axis=0)
@@ -415,6 +419,7 @@ class A3CAgent(object):
     rbs.reverse()  # 先reverse 与莫烦A3C_continuous_action.py的代码类似
     micro_isdone = GL.get_value(ind_thread, "micro_isdone")
     micro_isdone.reverse()
+    sum_high_reward = GL.get_value(ind_thread,"sum_high_reward")
     for i, [obs, action, next_obs] in enumerate(rbs):   # agent在回合里进行了多少步，就进行多少轮循环
       minimap = np.array(obs.observation['feature_minimap'], dtype=np.float32)  # 类似105-111行
       minimap = np.expand_dims(U.preprocess_minimap(minimap), axis=0)
@@ -429,6 +434,7 @@ class A3CAgent(object):
 
       # reward = obs.reward
       reward = high_reward(ind_thread, next_obs, obs, action, micro_isdone[i])  # 翔森设计的high reward
+      sum_high_reward += reward
       act_id = action.function  # Agent在这一步中选择动作的id序号
       act_args = action.arguments
 
@@ -442,6 +448,7 @@ class A3CAgent(object):
           valid_spatial_action[i] = 1
           spatial_action_selected[i, ind] = 1
 
+    GL.set_value(ind_thread,"sum_high_reward", sum_high_reward)
     minimaps = np.concatenate(minimaps, axis=0)
     screens = np.concatenate(screens, axis=0)
     infos = np.concatenate(infos, axis=0)

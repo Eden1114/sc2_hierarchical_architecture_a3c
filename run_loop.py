@@ -18,6 +18,11 @@ def run_loop(agents, env, max_frames, ind_thread):  # agents是列表，里面�
     while True:   # 底下发生的是一个回合内的过程
       GL.set_value(ind_thread, "ind_micro", -1)
       num_frames = 0  # 计算回合里的step数
+      GL.set_value(ind_thread, "supply_num",0)  #每局游戏需要用的全局变量清空
+      GL.set_value(ind_thread, "barrack_num", 0)
+      GL.set_value(ind_thread, "brrack_location", [])
+      GL.set_value(ind_thread, "sum_high_reward", 0)
+      GL.set_value(ind_thread, "sum_low_reward", 0)
       timesteps = env.reset()
       # reset函数返回TimeStep四元组（sc2_env.py 512行），包含的信息有4种，在知乎上PySC2详解的文章里有介绍
 
@@ -26,6 +31,7 @@ def run_loop(agents, env, max_frames, ind_thread):  # agents是列表，里面�
       while True:   # 底下发生的是回合内一步的过程
         ind_last = GL.get_value(ind_thread, "ind_micro")
         num_frames += 1
+        GL.set_value(ind_thread,"num_frames",num_frames )
         last_timesteps = timesteps
         # actions = [agent.step(timestep) for agent, timestep in zip(agents, timesteps)]      # 关键一步，调用了agent对象的step方法计算出选择的action。
 
