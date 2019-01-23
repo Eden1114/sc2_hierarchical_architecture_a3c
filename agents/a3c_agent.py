@@ -42,6 +42,7 @@ class A3CAgent(object):
     self.msize = msize
     self.ssize = ssize
     self.isize = len(actions.FUNCTIONS)
+    self.info_plus_size = 4
 
 
   def setup(self, sess, summary_writer):
@@ -69,7 +70,9 @@ class A3CAgent(object):
       # Set inputs of networks 网络输入量为以下3项
       self.minimap = tf.placeholder(tf.float32, [None, U.minimap_channel(), self.msize, self.msize], name='minimap')
       self.screen = tf.placeholder(tf.float32, [None, U.screen_channel(), self.ssize, self.ssize], name='screen')
-      self.info = tf.placeholder(tf.float32, [None, self.isize], name='info')
+      # TODO:
+      self.info = tf.placeholder(tf.float32, [None, self.isize+self.info_plus_size], name='info')
+      
       self.dir_high_usedToFeedLowNet = tf.placeholder(tf.float32, [1, 1], name='dir_high_usedToFeedLowNet')
       self.act_id = tf.placeholder(tf.float32, [1, 1], name='act_id')
 
@@ -194,8 +197,17 @@ class A3CAgent(object):
     screen = np.array(obs.observation['feature_screen'], dtype=np.float32)
     screen = np.expand_dims(U.preprocess_screen(screen), axis=0)
     # TODO: only use available actions
+
     info = np.zeros([1, self.isize], dtype=np.float32)  # self.isize值是动作函数的数量
     info[0, obs.observation['available_actions']] = 1   # info存储可执行的动作。
+
+    # 矿物 军队数量 农民数量
+    info_plus = np.zeros([1, self.info_plus_size], dtype=np.float32)
+    info_plus[0] = obs.observation.player.minerals, obs.observation['player'][5], obs.observation['player'][6], obs.observation['player'][4]
+
+    # info 现在的size 是 isize + info_plus_size
+    info = np.concatenate((info, info_plus), axis=1)
+
 
     feed = {self.minimap: minimap,
             self.screen: screen,
@@ -227,9 +239,19 @@ class A3CAgent(object):
     minimap = np.expand_dims(U.preprocess_minimap(minimap), axis=0)         # 这四行具体语法暂未研究
     screen = np.array(obs.observation['feature_screen'], dtype=np.float32)
     screen = np.expand_dims(U.preprocess_screen(screen), axis=0)
+    
     # TODO: only use available actions
     info = np.zeros([1, self.isize], dtype=np.float32)  # self.isize值是动作函数的数量
     info[0, obs.observation['available_actions']] = 1   # info存储可执行的动作。
+    
+    # 矿物 军队数量 农民数量
+    info_plus = np.zeros([1, self.info_plus_size], dtype=np.float32)
+    
+    info_plus[0] = obs.observation.player.minerals, obs.observation['player'][5], obs.observation['player'][6], obs.observation['player'][4]
+    
+    # info 现在的size 是 isize + info_plus_size
+    info = np.concatenate((info, info_plus), axis=1)
+
     dir_high_usedToFeedLowNet = np.ones([1, 1], dtype=np.float32)
     dir_high_usedToFeedLowNet[0][0] = dir_high
     act_ID = np.ones([1, 1], dtype=np.float32)
@@ -279,6 +301,15 @@ class A3CAgent(object):
       info = np.zeros([1, self.isize], dtype=np.float32)
       info[0, obs.observation['available_actions']] = 1
 
+      info_plus = np.zeros([1, self.info_plus_size], dtype=np.float32)
+      info_plus[0] = obs.observation.player.minerals, obs.observation['player'][5], obs.observation['player'][6], obs.observation['player'][4]
+      # info 现在的size 是 isize + info_plus_size
+      info = np.concatenate((info, info_plus), axis=1)
+      print('info')
+      print(info)
+      print(info_plus)
+
+
       dir_high_usedToFeedLowNet = np.ones([1, 1], dtype=np.float32)
       dir_high_usedToFeedLowNet[0][0] = dhs[0]
       act_id = np.ones([1, 1], dtype=np.float32)
@@ -320,6 +351,13 @@ class A3CAgent(object):
       screen = np.expand_dims(U.preprocess_screen(screen), axis=0)
       info = np.zeros([1, self.isize], dtype=np.float32)
       info[0, obs.observation['available_actions']] = 1
+
+      info_plus = np.zeros([1, self.info_plus_size], dtype=np.float32)
+      info_plus[0] = obs.observation.player.minerals, obs.observation['player'][5], obs.observation['player'][6], obs.observation['player'][4]
+
+      # info 现在的size 是 isize + info_plus_size
+      info = np.concatenate((info, info_plus), axis=1)
+
 
       minimaps.append(minimap)
       screens.append(screen)
@@ -400,6 +438,12 @@ class A3CAgent(object):
       info = np.zeros([1, self.isize], dtype=np.float32)
       info[0, obs.observation['available_actions']] = 1
 
+      info_plus = np.zeros([1, self.info_plus_size], dtype=np.float32)
+      info_plus[0] = obs.observation.player.minerals, obs.observation['player'][5], obs.observation['player'][6], obs.observation['player'][4]
+
+      # info 现在的size 是 isize + info_plus_size
+      info = np.concatenate((info, info_plus), axis=1)
+
       feed = {self.minimap: minimap,
               self.screen: screen,
               self.info: info}
@@ -427,6 +471,12 @@ class A3CAgent(object):
       screen = np.expand_dims(U.preprocess_screen(screen), axis=0)
       info = np.zeros([1, self.isize], dtype=np.float32)
       info[0, obs.observation['available_actions']] = 1
+
+      info_plus = np.zeros([1, self.info_plus_size], dtype=np.float32)
+      info_plus[0] = obs.observation.player.minerals, obs.observation['player'][5], obs.observation['player'][6], obs.observation['player'][4]
+
+      # info 现在的size 是 isize + info_plus_size
+      info = np.concatenate((info, info_plus), axis=1)
 
       minimaps.append(minimap)
       screens.append(screen)
