@@ -32,7 +32,7 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
 
     if action.function is 140 or 143 or 144 or 168:  # 如果是取消类动作
         reward -= 10
-    if not len(obs.observation.last_actions) and action.function != 0:  # 如果没有有效操作 该操作待议
+    if not len(obs.observation.last_actions) and action.function != 1:  # 如果没有有效操作 该操作待议
         reward -= 10
 
     #矿变化相关reward
