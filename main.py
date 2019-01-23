@@ -153,6 +153,10 @@ def run_thread(agent, map_name, visualize, ind_thread):  # A3CAgent对象，地�
           GL.add_value_list(ind_thread, "reward_low_list",GL.get_value(ind_thread, "sum_low_reward")/num_of_call_step_low )
           if counter % FLAGS.snapshot_step == 1:    # 到规定回合数存储网络参数（tf.train.Saver().save(),见a3c_agent）
             agent.save_model(SNAPSHOT, counter)
+          if counter %50 == 0:  #回合是50的倍数，存一下单个episode的reward变化
+            for i in range(PARALLEL):
+              np.save("./DataForAnalysis/low_reward_of_episode"+counter+"parallel"+i+".npy", GL.get_value(i, "reward_low_list"))
+              np.save("./DataForAnalysis/high_reward_of_episode"+counter+"parallel"+i+".npy", GL.get_value(i, "reward_high_list"))
           if counter >= FLAGS.max_steps:    # 超过设定的最大训练回合数后，退出循环（等于线程结束）
             break
 
@@ -218,8 +222,8 @@ def _main(unused_argv):
     print(stopwatch.sw)
 
   for i in range(PARALLEL):
-    np.save("./DataForAnalysis/low_reward_list.npy", GL.get_value(i, "reward_low_list"))
-    np.save("./DataForAnalysis/high_reward_list.npy", GL.get_value(i, "reward_high_list"))
+    np.save("./DataForAnalysis/low_reward_list_parallel"+i+".npy", GL.get_value(i, "reward_low_list"))
+    np.save("./DataForAnalysis/high_reward_list_parallel"+i+".npy", GL.get_value(i, "reward_high_list"))
 
 
   print('Fin. ')
