@@ -55,8 +55,8 @@ def run_loop(agents, env, max_frames, ind_thread):  # agents是列表，里面�
         # 如果其为True，则进入以下的模块，action没用了，act_id被使用来计算新的action
 
         if call_step_low == True:
-          GL.set_value(ind_thread, "act_id_micro", act_id)
-          target_pack = [agent.step_low(ind_thread, timestep, dir_high, act_id) for agent, timestep in zip(agents, timesteps)]
+          GL.set_value(ind_thread, "act_id_micro", ind_todo)
+          target_pack = [agent.step_low(ind_thread, timestep, dir_high, ind_todo) for agent, timestep in zip(agents, timesteps)]
           # target_pack = [agent.step_low(ind_thread, timestep) for agent, timestep in zip(agents, timesteps)]
           target_0 = target_pack[0][0]
           target_1 = target_pack[0][1]
@@ -88,7 +88,7 @@ def run_loop(agents, env, max_frames, ind_thread):  # agents是列表，里面�
 
         # 如下模块表示：动作函数合法但失败（比如造补给站在available_action_list里，但选的建造坐标在基地的位置上，则造不出来）
         # 则将ind_micro置为-99，表示“宏动作执行失败”
-        if call_step_low and len( timesteps[0].observation.last_actions ) == 0:
+        if not len(timesteps[0].observation.last_actions) and action[0].function != 0:
           GL.set_value(ind_thread, "ind_micro", -99)
 
         # Only for a single player!

@@ -281,17 +281,17 @@ class A3CAgent(object):
 
       dir_high_usedToFeedLowNet = np.ones([1, 1], dtype=np.float32)
       dir_high_usedToFeedLowNet[0][0] = dhs[0]
-      act_ID = np.ones([1, 1], dtype=np.float32)
+      act_id = np.ones([1, 1], dtype=np.float32)
       # act_ID[0][0] = rbs[-1][1].function
       # 之所以不能用rbs里的action信息，是因为rbs里的action可能是no_op(由于出现动作not valid/不合法的情况，为了使游戏不崩掉而不得不这么办的补救措施)
       # 但这里要输入的act_id应该是step_low算出来的act_id
-      act_ID[0][0] = GL.get_value(ind_thread, "act_id_micro")
+      act_id[0][0] = GL.get_value(ind_thread, "act_id_micro")
 
       feed = {self.minimap: minimap,
               self.screen: screen,
               self.info: info,
               self.dir_high_usedToFeedLowNet: dir_high_usedToFeedLowNet,
-              self.act_id: act_ID,
+              self.act_id: act_id,
               }
       R = self.sess.run(self.value_low, feed_dict=feed)[0]
 
