@@ -306,7 +306,7 @@ class A3CAgent(object):
       # info 现在的size 是 isize + info_plus_size
       info = np.concatenate((info, info_plus), axis=1)
       print('info')
-      print(info)
+      # print(info)
       print(info_plus)
 
 
@@ -378,6 +378,7 @@ class A3CAgent(object):
       coord[0], coord[1] = self.step_low(ind_thread, obs, dir_high_usedToFeedLowNet, act_ID)
       reward = low_reward(next_obs, obs, coord, micro_isdone[i], macro_type, coord_type)
       sum_low_reward += reward
+      GL.add_value_list(ind_thread, "low_reward_of_episode", reward)
 
       act_id = action.function  # Agent在这一步中选择动作的id序号
       act_args = action.arguments
@@ -485,6 +486,7 @@ class A3CAgent(object):
       # reward = obs.reward
       reward = high_reward(ind_thread, next_obs, obs, action, micro_isdone[i])  # 翔森设计的high reward
       sum_high_reward += reward
+      GL.add_value_list(ind_thread, "high_reward_of_episode", reward)
       act_id = action.function  # Agent在这一步中选择动作的id序号
       act_args = action.arguments
 

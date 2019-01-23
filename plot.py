@@ -36,10 +36,15 @@ Python-Matplotlib 9 颜色和样式
 """
 
 
-tmp1 = np.load('./reward_list/rewards.npy')
+tmp1 = np.load('./DataForAnalysis/victory_or_defeat_parallel0.npy')
+tmp2 = np.load('./DataForAnalysis/high_reward_of_episode1parallel0.npy')
+tmp3 = np.load('./DataForAnalysis/high_reward_list_parallel0.npy')
+print(tmp1)
+print(tmp2)
+print(tmp3)
 
 
-plt.plot(np.arange(len(tmp1)), tmp1, 'b-')
+# plt.plot(np.arange(len(tmp1)), tmp1, 'b-')
 # plt.plot(np.arange(len(tmp1)), tmp1, 'r-')
 # plt.plot(np.arange(len(tmp50)), tmp50, 'g-')
 # plt.plot(np.arange(len(tmp49)), tmp49, 'y-')
@@ -49,5 +54,5 @@ plt.plot(np.arange(len(tmp1)), tmp1, 'b-')
 # plt.plot(np.arange(len(tmp40)), tmp37, 'r-')
 # plt.plot(np.arange(len(tmp41)), tmp38, 'g-')
 # plt.plot(np.arange(len(tmp3)) + 1006, tmp3, 'b-')
-plt.show()
+# plt.show()
 

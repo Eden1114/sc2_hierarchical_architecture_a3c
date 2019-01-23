@@ -167,8 +167,8 @@ def run_thread(agent, map_name, visualize, ind_thread):  # A3CAgent对象，地�
             agent.save_model(SNAPSHOT, counter)
           if counter %50 == 1:  #回合是50的倍数+1时，存一下单个episode的reward变化
             for i in range(PARALLEL):
-              np.save("./DataForAnalysis/low_reward_of_episode"+str(counter)+"parallel"+str(i)+".npy", GL.get_value(i, "reward_low_list"))
-              np.save("./DataForAnalysis/high_reward_of_episode"+str(counter)+"parallel"+str(i)+".npy", GL.get_value(i, "reward_high_list"))
+              np.save("./DataForAnalysis/low_reward_of_episode"+str(counter)+"parallel"+str(i)+".npy", GL.get_value(i, "low_reward_of_episode"))
+              np.save("./DataForAnalysis/high_reward_of_episode"+str(counter)+"parallel"+str(i)+".npy", GL.get_value(i, "high_reward_of_episode"))
           if counter >= FLAGS.max_steps:    # 超过设定的最大训练回合数后，退出循环（等于线程结束）
             break
 

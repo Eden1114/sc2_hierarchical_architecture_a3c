@@ -23,6 +23,8 @@ def run_loop(agents, env, max_frames, ind_thread):  # agents是列表，里面�
       GL.set_value(ind_thread, "brrack_location", [])
       GL.set_value(ind_thread, "sum_high_reward", 0)
       GL.set_value(ind_thread, "sum_low_reward", 0)
+      GL.set_value(ind_thread, "high_reward_of_episode",[])
+      GL.set_value(ind_thread, "low_reward_of_episode",[])
       timesteps = env.reset()
       # reset函数返回TimeStep四元组（sc2_env.py 512行），包含的信息有4种，在知乎上PySC2详解的文章里有介绍
 
