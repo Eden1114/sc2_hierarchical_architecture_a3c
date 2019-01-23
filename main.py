@@ -10,6 +10,7 @@ import threading
 
 from absl import app
 from absl import flags
+
 from pysc2 import maps
 from pysc2.env import available_actions_printer
 from pysc2.env import sc2_env
@@ -78,10 +79,13 @@ GL.global_init(PARALLEL)
 
 LOG = FLAGS.log_path+FLAGS.map+'/'+FLAGS.net
 SNAPSHOT = FLAGS.snapshot_path+FLAGS.map+'/'+FLAGS.net
+ANALYSIS = './DataForAnalysis/'
 if not os.path.exists(LOG):
   os.makedirs(LOG)
 if not os.path.exists(SNAPSHOT):
   os.makedirs(SNAPSHOT)
+if not os.path.exists(ANALYSIS):
+  os.makedirs(ANALYSIS)
 
 
 def run_thread(agent, map_name, visualize, ind_thread):  # A3CAgent对象，地图名（字符串），是否可视化feature map（布尔值）
