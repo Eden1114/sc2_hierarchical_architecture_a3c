@@ -1,2 +1,3 @@
 /snapshot/*
 /log/*
+/__pycache__/*

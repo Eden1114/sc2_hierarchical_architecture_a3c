@@ -32,7 +32,7 @@ flags.DEFINE_bool("training", True, "Whether to train agents.")
 flags.DEFINE_bool("continuation", False, "Continuously training.")
 flags.DEFINE_float("learning_rate", 5e-4, "Learning rate for training.")
 flags.DEFINE_float("discount", 0.99, "Discount rate for future rewards.")
-flags.DEFINE_integer("max_steps", int(1), "Total steps for training.")    # 这里的step指的是训练的最大回合数，而不是回合episode里的那个step
+flags.DEFINE_integer("max_steps", int(2), "Total steps for training.")    # 这里的step指的是训练的最大回合数，而不是回合episode里的那个step
 flags.DEFINE_integer("snapshot_step", int(20), "Step for snapshot.")
 flags.DEFINE_string("snapshot_path", "./snapshot/", "Path for snapshot.")
 flags.DEFINE_string("log_path", "./log/", "Path for log.")
@@ -101,6 +101,7 @@ def run_thread(agent, map_name, visualize, ind_thread):  # A3CAgent对象，地�
     # Only for a single player!
     counter = 0
     # 后缀1供下层网络更新时使用， 后缀2供上层网络更新时使用
+    iswin = -99
     replay_buffer_1 = []
     dir_high_buffer_1 = []
     replay_buffer_2 = []
@@ -125,6 +126,10 @@ def run_thread(agent, map_name, visualize, ind_thread):  # A3CAgent对象，地�
           # Learning rate schedule
           # learning_rate = FLAGS.learning_rate * (1 - 0.9 * counter / FLAGS.max_steps)   # 根据当前进行完的回合数量修改学习速率（减小）
           # agent.update(replay_buffer, FLAGS.discount, learning_rate, counter)
+
+          iswin = replay_buffer_2[-1][-1].reward
+          print("obs.reward_1:", iswin)
+
 
         # 更新下层网络
         # if stepsInOneEp % UPDATE_ITER_LOW == 0 or is_done:
@@ -151,8 +156,15 @@ def run_thread(agent, map_name, visualize, ind_thread):  # A3CAgent对象，地�
         if is_done:
           GL.add_value_list(ind_thread, "reward_high_list",GL.get_value(ind_thread,"sum_high_reward")/stepsInOneEp )
           GL.add_value_list(ind_thread, "reward_low_list",GL.get_value(ind_thread, "sum_low_reward")/num_of_call_step_low )
+          # iswin = replay_buffer_1[-1][-1].reward
+          print("obs.reward-2:",iswin )
+          GL.add_value_list(ind_thread, "victory_or_defeat",iswin )
           if counter % FLAGS.snapshot_step == 1:    # 到规定回合数存储网络参数（tf.train.Saver().save(),见a3c_agent）
             agent.save_model(SNAPSHOT, counter)
+          if counter %50 == 1:  #回合是50的倍数+1时，存一下单个episode的reward变化
+            for i in range(PARALLEL):
+              np.save("./DataForAnalysis/low_reward_of_episode"+str(counter)+"parallel"+str(i)+".npy", GL.get_value(i, "reward_low_list"))
+              np.save("./DataForAnalysis/high_reward_of_episode"+str(counter)+"parallel"+str(i)+".npy", GL.get_value(i, "reward_high_list"))
           if counter >= FLAGS.max_steps:    # 超过设定的最大训练回合数后，退出循环（等于线程结束）
             break
 
@@ -218,9 +230,9 @@ def _main(unused_argv):
     print(stopwatch.sw)
 
   for i in range(PARALLEL):
-    np.save("./DataForAnalysis/low_reward_list.npy", GL.get_value(i, "reward_low_list"))
-    np.save("./DataForAnalysis/high_reward_list.npy", GL.get_value(i, "reward_high_list"))
-
+    np.save("./DataForAnalysis/low_reward_list_parallel"+str(i)+".npy", GL.get_value(i, "reward_low_list"))
+    np.save("./DataForAnalysis/high_reward_list_parallel"+str(i)+".npy", GL.get_value(i, "reward_high_list"))
+    np.save("./DataForAnalysis/victory_or_defeat_parallel"+str(i)+".npy", GL.get_value(i, "victory_or_defeat"))
 
   print('Fin. ')
 
