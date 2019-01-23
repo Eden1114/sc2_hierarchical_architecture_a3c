@@ -10,11 +10,12 @@
 
 
 待修改的重点部分：
-1）动作硬编码的设计（宏动作）——已经写好了6个基本的
+1）动作硬编码的设计（宏动作）——已经写好了6个基本的——done
 
 2）上下层网络结构（即具体怎么卷积、怎么全连接）有待修改——done
 3）2个网络结构接收的参数（信息）也应该有所不同（改info）
-3）step_low的接收参数里应该还有dir_hig和当前执行的action_id 待改——done（但其实可以考虑把action_id替换为ind_todo）
+3）step_low的接收参数里应该还有dir_hig和当前执行的action_id 待改——done
+（但其实可以考虑把action_id替换为ind_todo）——done
 
 4）Update（low和high）跑通了，但99%没有效果，要改2个模块中的reward——done
 5）Reward和value的归一化——done

@@ -18,6 +18,7 @@ import tensorflow as tf
 
 from run_loop import run_loop
 import agents.globalvar as GL
+import numpy as np
 
 COUNTER = 0
 LOCK = threading.Lock()
@@ -31,7 +32,7 @@ flags.DEFINE_bool("training", True, "Whether to train agents.")
 flags.DEFINE_bool("continuation", False, "Continuously training.")
 flags.DEFINE_float("learning_rate", 5e-4, "Learning rate for training.")
 flags.DEFINE_float("discount", 0.99, "Discount rate for future rewards.")
-flags.DEFINE_integer("max_steps", int(1e5), "Total steps for training.")    # 这里的step指的是训练的最大回合数，而不是回合episode里的那个step
+flags.DEFINE_integer("max_steps", int(1), "Total steps for training.")    # 这里的step指的是训练的最大回合数，而不是回合episode里的那个step
 flags.DEFINE_integer("snapshot_step", int(20), "Step for snapshot.")
 flags.DEFINE_string("snapshot_path", "./snapshot/", "Path for snapshot.")
 flags.DEFINE_string("log_path", "./log/", "Path for log.")
@@ -60,7 +61,7 @@ flags.DEFINE_integer("max_agent_steps", 10000, "Total agent steps.")       # 这
 flags.DEFINE_bool("profile", False, "Whether to turn on code profiling.")
 flags.DEFINE_bool("trace", False, "Whether to trace the code execution.")
 # 线程数
-flags.DEFINE_integer("parallel", 5, "How many instances to run in parallel.")
+flags.DEFINE_integer("parallel", 1, "How many instances to run in parallel.")
 flags.DEFINE_bool("save_replay", False, "Whether to save a replay at the end.")
 
 FLAGS(sys.argv)
@@ -104,6 +105,7 @@ def run_thread(agent, map_name, visualize, ind_thread):  # A3CAgent对象，地�
     dir_high_buffer_1 = []
     replay_buffer_2 = []
     dir_high_buffer_2 = []
+    num_of_call_step_low = 0
 
     # 下行中的run_loop是个生成器，for循环每次进入到run_loop里，得到yield后返回，继续进行循环体里的语句，for循环再次进入run_loop后从run_loop的yield的下一条语句开始执行，执行到yield再次返回，继续执行循环体语句...
     for recorder, is_done, stepsInOneEp, call_step_low, macro_type, coord_type in run_loop([agent], env, MAX_AGENT_STEPS, ind_thread):   # 将agent对象存入[]再作为参数传递进run_loop生成器里，recorder是一个三元列表
@@ -133,6 +135,7 @@ def run_thread(agent, map_name, visualize, ind_thread):  # A3CAgent对象，地�
           # time.sleep(2)
           replay_buffer_1 = []
           dir_high_buffer_1 = []
+          num_of_call_step_low +=1
 
         # 更新上层网络
         ind_last = GL.get_value(ind_thread, "ind_micro")
@@ -146,6 +149,8 @@ def run_thread(agent, map_name, visualize, ind_thread):  # A3CAgent对象，地�
           dir_high_buffer_2 = []
 
         if is_done:
+          GL.add_value_list(ind_thread, "reward_high_list",GL.get_value(ind_thread,"sum_high_reward")/stepsInOneEp )
+          GL.add_value_list(ind_thread, "reward_low_list",GL.get_value(ind_thread, "sum_low_reward")/num_of_call_step_low )
           if counter % FLAGS.snapshot_step == 1:    # 到规定回合数存储网络参数（tf.train.Saver().save(),见a3c_agent）
             agent.save_model(SNAPSHOT, counter)
           if counter >= FLAGS.max_steps:    # 超过设定的最大训练回合数后，退出循环（等于线程结束）
@@ -212,6 +217,12 @@ def _main(unused_argv):
   if FLAGS.profile:
     print(stopwatch.sw)
 
+  for i in range(PARALLEL):
+    np.save("./DataForAnalysis/low_reward_list.npy", GL.get_value(i, "reward_low_list"))
+    np.save("./DataForAnalysis/high_reward_list.npy", GL.get_value(i, "reward_high_list"))
+
+
+  print('Fin. ')
 
 if __name__ == "__main__":
   app.run(_main)

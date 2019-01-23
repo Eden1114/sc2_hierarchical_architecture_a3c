@@ -18,6 +18,11 @@ def run_loop(agents, env, max_frames, ind_thread):  # agents是列表，里面�
     while True:   # 底下发生的是一个回合内的过程
       GL.set_value(ind_thread, "ind_micro", -1)
       num_frames = 0  # 计算回合里的step数
+      GL.set_value(ind_thread, "supply_num",0)  #每局游戏需要用的全局变量清空
+      GL.set_value(ind_thread, "barrack_num", 0)
+      GL.set_value(ind_thread, "brrack_location", [])
+      GL.set_value(ind_thread, "sum_high_reward", 0)
+      GL.set_value(ind_thread, "sum_low_reward", 0)
       timesteps = env.reset()
       # reset函数返回TimeStep四元组（sc2_env.py 512行），包含的信息有4种，在知乎上PySC2详解的文章里有介绍
 
@@ -26,6 +31,7 @@ def run_loop(agents, env, max_frames, ind_thread):  # agents是列表，里面�
       while True:   # 底下发生的是回合内一步的过程
         ind_last = GL.get_value(ind_thread, "ind_micro")
         num_frames += 1
+        GL.set_value(ind_thread,"num_frames",num_frames )
         last_timesteps = timesteps
         # actions = [agent.step(timestep) for agent, timestep in zip(agents, timesteps)]      # 关键一步，调用了agent对象的step方法计算出选择的action。
 
@@ -49,8 +55,8 @@ def run_loop(agents, env, max_frames, ind_thread):  # agents是列表，里面�
         # 如果其为True，则进入以下的模块，action没用了，act_id被使用来计算新的action
 
         if call_step_low == True:
-          GL.set_value(ind_thread, "act_id_micro", act_id)
-          target_pack = [agent.step_low(ind_thread, timestep, dir_high, act_id) for agent, timestep in zip(agents, timesteps)]
+          GL.set_value(ind_thread, "act_id_micro", ind_todo)
+          target_pack = [agent.step_low(ind_thread, timestep, dir_high, ind_todo) for agent, timestep in zip(agents, timesteps)]
           # target_pack = [agent.step_low(ind_thread, timestep) for agent, timestep in zip(agents, timesteps)]
           target_0 = target_pack[0][0]
           target_1 = target_pack[0][1]
@@ -82,7 +88,7 @@ def run_loop(agents, env, max_frames, ind_thread):  # agents是列表，里面�
 
         # 如下模块表示：动作函数合法但失败（比如造补给站在available_action_list里，但选的建造坐标在基地的位置上，则造不出来）
         # 则将ind_micro置为-99，表示“宏动作执行失败”
-        if call_step_low and len( timesteps[0].observation.last_actions ) == 0:
+        if not len(timesteps[0].observation.last_actions) and action[0].function != 1:
           GL.set_value(ind_thread, "ind_micro", -99)
 
         # Only for a single player!
