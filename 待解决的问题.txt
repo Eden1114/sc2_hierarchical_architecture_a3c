@@ -12,14 +12,14 @@
 待修改的重点部分：
 1）动作硬编码的设计（宏动作）——已经写好了6个基本的
 
-2）上下层网络结构（即具体怎么卷积、怎么全连接）有待修改
+2）上下层网络结构（即具体怎么卷积、怎么全连接）有待修改——done
 3）2个网络结构接收的参数（信息）也应该有所不同（改info）
-3）step_low的接收参数里应该还有dir_hig和当前执行的action_id 待改
+3）step_low的接收参数里应该还有dir_hig和当前执行的action_id 待改——done（但其实可以考虑把action_id替换为ind_todo）
 
-4）Update（low和high）跑通了，但99%没有效果，要改2个模块中的reward
-5）Reward和value的归一化
-6）宏动作失败后给惩罚，需要纳入reward中
-7）low_reward 的设计原则应当是“该reward能帮agent决定出更好的位置”，若low_reward没有这种作用则应考虑重新设计
+4）Update（low和high）跑通了，但99%没有效果，要改2个模块中的reward——done
+5）Reward和value的归一化——done
+6）宏动作失败后给惩罚，需要纳入reward中——done
+7）low_reward 的设计原则应当是“该reward能帮agent决定出更好的位置”，若low_reward没有这种作用则应考虑重新设计——done
 
 8）编写输出日志的内容（为了数据可视化&性能分析）【可以最后再加】
 

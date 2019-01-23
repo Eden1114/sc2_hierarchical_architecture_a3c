@@ -187,54 +187,6 @@ class A3CAgent(object):
       self.saver = tf.train.Saver(max_to_keep=100)  # 定义self.saver 为 tf的存储器Saver()，在save_model和load_model函数里使用
 
 
-# 该函数不再使用：
-  def step(self, obs):  # obs就是环境传入的timestep
-    minimap = np.array(obs.observation['feature_minimap'], dtype=np.float32)  # 以下4行将minimap和screen的特征做一定处理后分别保存在minimap和screen变量中
-    minimap = np.expand_dims(U.preprocess_minimap(minimap), axis=0)         # 这四行具体语法暂未研究
-    screen = np.array(obs.observation['feature_screen'], dtype=np.float32)
-    screen = np.expand_dims(U.preprocess_screen(screen), axis=0)
-    # TODO: only use available actions
-    info = np.zeros([1, self.isize], dtype=np.float32)  # self.isize值是动作函数的数量
-    info[0, obs.observation['available_actions']] = 1   # info存储可执行的动作。
-
-    feed = {self.minimap: minimap,
-            self.screen: screen,
-            self.info: info}
-    non_spatial_action, spatial_action = self.sess.run(   # non_spatial_action和spatial_action是两个网络，
-      [self.non_spatial_action, self.spatial_action],   # 一个计算非空间动作（大概就是要进行什么操作，如勾选方框、建补给库），一个计算空间内的动作（应该是在空间的哪个位置施加操作）
-      feed_dict=feed)
-
-    # Select an action and a spatial target
-    non_spatial_action = non_spatial_action.ravel()   # non_spatial_action和spatial_action是两个网络返回的动作值
-    # print('non_spatial_action=========', non_spatial_action)
-    spatial_action = spatial_action.ravel()           # ravel()是numpy的函数，作用是将数据降维
-    valid_actions = obs.observation['available_actions']
-    # print('valid_actions=========', valid_actions)
-    act_id = valid_actions[np.argmax(non_spatial_action[valid_actions])]  # 获取要执行的动作id
-    target = np.argmax(spatial_action)
-    target = [int(target // self.ssize), int(target % self.ssize)]  # 获取要施加动作的位置 疑问：若action是勾选方框怎么办？target只有一个坐标吧，那另一个坐标呢？
-
-    if False:   # 疑问：if False什么意思？网上没查到
-      print(actions.FUNCTIONS[act_id].name, target)
-
-    # Epsilon greedy exploration  # 0.05(epsilon[0])的概率随机选一个动作（会覆盖之前的act_id），0.2(epsilon[1])的概率随机选一个位置施加动作
-    if self.training and np.random.rand() < self.epsilon[0]:  # epsilon值在40行
-      act_id = np.random.choice(valid_actions)
-    if self.training and np.random.rand() < self.epsilon[1]:
-      dy = np.random.randint(-4, 5)
-      target[0] = int(max(0, min(self.ssize-1, target[0]+dy)))
-      dx = np.random.randint(-4, 5)
-      target[1] = int(max(0, min(self.ssize-1, target[1]+dx)))
-
-    # Set act_id and act_args
-    act_args = []
-    for arg in actions.FUNCTIONS[act_id].args:  # actions是pysc2.lib中的文件 根据act_id获取其可使用的参数，并添加到args中去
-      if arg.name in ('screen', 'minimap', 'screen2'):
-        act_args.append([target[1], target[0]])
-      else:
-        act_args.append([0])  # TODO: Be careful
-    return actions.FunctionCall(act_id, act_args)
-
   # DHN add:
   def step_high(self, obs):  # obs就是环境传入的timestep
     minimap = np.array(obs.observation['feature_minimap'], dtype=np.float32)  # 以下4行将minimap和screen的特征做一定处理后分别保存在minimap和screen变量中
@@ -264,7 +216,7 @@ class A3CAgent(object):
 
     # Epsilon greedy exploration  # 0.05(epsilon[0])的概率随机选一个宏动作（会覆盖之前的dir_high_id）
     if self.training and np.random.rand() < self.epsilon[0]:
-      dir_high_id = random.randint(0,num_macro_action-1)
+      dir_high_id = random.randint(0, num_macro_action-1)
 
     return dir_high_id
 
@@ -308,99 +260,11 @@ class A3CAgent(object):
       dx = np.random.randint(-4, 5)
       target[1] = int(max(0, min(self.ssize-1, target[1]+dx)))
 
-    #DHN待处理：
-    # act_id = 1  # 暂时指定为1，之后替换为硬编码的动作id
-    # 设置动作函数所需的act_args
-    # act_args = []
-    # for arg in actions.FUNCTIONS[act_id].args:  # actions是pysc2.lib中的文件 根据act_id获取其可使用的参数，并添加到args中去
-    #   if arg.name in ('screen', 'minimap', 'screen2'):
-    #     act_args.append([target[1], target[0]])
-    #   else:
-    #     act_args.append([0])  # TODO: Be careful
-    # return actions.FunctionCall(act_id, act_args)
     return target[0], target[1]
 
-# 该函数不再使用：
-  def update(self, rbs, disc, lr, cter):  # rbs是[last_timesteps[0], actions[0], timesteps[0]]的集合（agent在一回合里进行了多少step就有多少个），具体见run_loop25行
-    # Compute R, which is value of the last observation
-    obs = rbs[-1][-1]   # rbs的最后一个元素，应当是当前一步的timesteps值。即obs可以看作timesteps
-    if obs.last():
-      R = 0
-    else:
-      minimap = np.array(obs.observation['feature_minimap'], dtype=np.float32)  # 类似105-111行
-      minimap = np.expand_dims(U.preprocess_minimap(minimap), axis=0)
-      screen = np.array(obs.observation['feature_screen'], dtype=np.float32)
-      screen = np.expand_dims(U.preprocess_screen(screen), axis=0)
-      info = np.zeros([1, self.isize], dtype=np.float32)
-      info[0, obs.observation['available_actions']] = 1
 
-      feed = {self.minimap: minimap,
-              self.screen: screen,
-              self.info: info}
-      R = self.sess.run(self.value, feed_dict=feed)[0]
+  def update_low(self, ind_thread, rbs, dhs,  disc, lr_a, lr_c, cter, macro_type, coord_type):
 
-    # Compute targets and masks
-    minimaps = []
-    screens = []
-    infos = []
-
-    value_target = np.zeros([len(rbs)], dtype=np.float32)   # len(rbs) 计算出agent在回合里总共进行的步数
-    value_target[-1] = R
-
-    valid_spatial_action = np.zeros([len(rbs)], dtype=np.float32)       # 含义是每一个step需不需要坐标参数
-    spatial_action_selected = np.zeros([len(rbs), self.ssize**2], dtype=np.float32) # 含义是每一个step需不需要坐标参数（第一维上），且具体坐标参数是什么（第二维上）
-    valid_non_spatial_action = np.zeros([len(rbs), len(actions.FUNCTIONS)], dtype=np.float32)
-    non_spatial_action_selected = np.zeros([len(rbs), len(actions.FUNCTIONS)], dtype=np.float32)
-
-    rbs.reverse()  # 先reverse，再进行198行的操作，与莫烦A3C_continuous_action.py 145行开始的代码类似
-    for i, [obs, action, next_obs] in enumerate(rbs):   # agent在回合里进行了多少步，就进行多少轮循环
-      minimap = np.array(obs.observation['feature_minimap'], dtype=np.float32)  # 类似105-111行
-      minimap = np.expand_dims(U.preprocess_minimap(minimap), axis=0)
-      screen = np.array(obs.observation['feature_screen'], dtype=np.float32)
-      screen = np.expand_dims(U.preprocess_screen(screen), axis=0)
-      info = np.zeros([1, self.isize], dtype=np.float32)
-      info[0, obs.observation['available_actions']] = 1
-
-      minimaps.append(minimap)
-      screens.append(screen)
-      infos.append(info)
-
-      reward = obs.reward
-      act_id = action.function  # Agent在这一步中选择动作的id序号
-      act_args = action.arguments
-
-      value_target[i] = reward + disc * value_target[i-1]   # 可参考莫烦Q_Learning教程中对Gamma的意义理解的那张图（有3个眼镜那张），得到回合中每个状态的价值V_S
-      # 这里没像莫烦一样再次reverse value 似乎是因为其他参数（如minimap、screen、info等）也都是最后往前反序排列的。见181-182行
-      valid_actions = obs.observation["available_actions"]  # valid_actions是个元素数为541的列表，many-hot（参考one-hot进行理解）的列表
-      valid_non_spatial_action[i, valid_actions] = 1
-      non_spatial_action_selected[i, act_id] = 1
-
-      args = actions.FUNCTIONS[act_id].args
-      for arg, act_arg in zip(args, act_args):
-        if arg.name in ('screen', 'minimap', 'screen2'):
-          ind = act_arg[1] * self.ssize + act_arg[0]
-          valid_spatial_action[i] = 1
-          spatial_action_selected[i, ind] = 1
-
-    minimaps = np.concatenate(minimaps, axis=0)
-    screens = np.concatenate(screens, axis=0)
-    infos = np.concatenate(infos, axis=0)
-
-    # Train
-    feed = {self.minimap: minimaps,
-            self.screen: screens,
-            self.info: infos,
-            self.value_target: value_target,
-            self.valid_spatial_action: valid_spatial_action,
-            self.spatial_action_selected: spatial_action_selected,
-            self.valid_non_spatial_action: valid_non_spatial_action,
-            self.non_spatial_action_selected: non_spatial_action_selected,
-            self.learning_rate: lr}
-    _, summary = self.sess.run([self.train_op, self.summary_op], feed_dict=feed)  # 关键语句：训练的是self.train_op, self.summary_op（在上面的build_model函数里去查看它们具体是什么）
-    self.summary_writer.add_summary(summary, cter)
-
-
-  def update_low(self, ind_thread, rbs, dhs,  disc, lr_a, lr_c, cter):
     # rbs(replayBuffers)是[last_timesteps[0], actions[0], timesteps[0]]的集合（agent在一回合里进行了多少step就有多少个），具体见run_loop25行
 
     # Compute R, which is value of the last observation
@@ -445,6 +309,8 @@ class A3CAgent(object):
     spatial_action_selected = np.zeros([len(rbs), self.ssize**2], dtype=np.float32) # 含义是每一个step需不需要坐标参数（第一维上），且具体坐标参数是什么（第二维上）
 
     rbs.reverse()  # 先reverse 与莫烦A3C_continuous_action.py的代码类似
+    micro_isdone = GL.get_value(ind_thread, "micro_isdone")
+    micro_isdone.reverse()
     for i, [obs, action, next_obs] in enumerate(rbs):   # agent在回合里进行了多少步，就进行多少轮循环
       minimap = np.array(obs.observation['feature_minimap'], dtype=np.float32)  # 类似105-111行
       minimap = np.expand_dims(U.preprocess_minimap(minimap), axis=0)
@@ -457,7 +323,21 @@ class A3CAgent(object):
       screens.append(screen)
       infos.append(info)
 
-      reward = obs.reward
+      dir_high_usedToFeedLowNet = np.ones([1, 1], dtype=np.float32)
+      dir_high_usedToFeedLowNet[0][0] = dhs[i]
+      act_ID = np.ones([1, 1], dtype=np.float32)
+      # act_ID[0][0] = act_id
+      # 之所以不能用rbs里的action信息，是因为rbs里的action可能是no_op(由于出现动作not valid/不合法的情况，为了使游戏不崩掉而不得不这么办的补救措施)
+      # 但这里要输入的act_id应该是step_low算出来的act_id
+      act_ID[0][0] = GL.get_value(ind_thread, "act_id_micro")
+      # dir_highs.append(dir_high_usedToFeedLowNet)
+      # act_ids.append(act_ID)
+
+      coord = [0, 0]
+      # coord[0], coord[1] = [32, 32]
+      coord[0], coord[1] = self.step_low(ind_thread, obs, dir_high_usedToFeedLowNet, act_ID)
+      reward = low_reward(next_obs, obs, coord, micro_isdone[i], macro_type, coord_type)
+
       act_id = action.function  # Agent在这一步中选择动作的id序号
       act_args = action.arguments
 
@@ -471,16 +351,7 @@ class A3CAgent(object):
           valid_spatial_action[i] = 1
           spatial_action_selected[i, ind] = 1
 
-      dir_high_usedToFeedLowNet = np.ones([1, 1], dtype=np.float32)
-      dir_high_usedToFeedLowNet[0][0] = dhs[i]
-      act_ID = np.ones([1, 1], dtype=np.float32)
-      # act_ID[0][0] = act_id
-      # 之所以不能用rbs里的action信息，是因为rbs里的action可能是no_op(由于出现动作not valid/不合法的情况，为了使游戏不崩掉而不得不这么办的补救措施)
-      # 但这里要输入的act_id应该是step_low算出来的act_id
-      act_ID[0][0] = GL.get_value(ind_thread, "act_id_micro")
 
-      # dir_highs.append(dir_high_usedToFeedLowNet)
-      # act_ids.append(act_ID)
 
     minimaps = np.concatenate(minimaps, axis=0)
     screens = np.concatenate(screens, axis=0)
