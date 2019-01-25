@@ -305,9 +305,9 @@ class A3CAgent(object):
       info_plus[0] = obs.observation.player.minerals, obs.observation['player'][5], obs.observation['player'][6], obs.observation['player'][4]
       # info 现在的size 是 isize + info_plus_size
       info = np.concatenate((info, info_plus), axis=1)
-      print('info')
+      # print('info')
       # print(info)
-      print(info_plus)
+      # print(info_plus)
 
 
       dir_high_usedToFeedLowNet = np.ones([1, 1], dtype=np.float32)

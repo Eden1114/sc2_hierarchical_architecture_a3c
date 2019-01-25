@@ -24,6 +24,8 @@ import numpy as np
 COUNTER = 0
 LOCK = threading.Lock()
 
+#每次运行时设置：training，continuation，max_steps，snapshot_step， render，parallel
+
 #DHN add:
 UPDATE_ITER_LOW = 10                    # 经历多少个step以后更新下层网络，10差不多是游戏里的4s少一点
 UPDATE_ITER_HIGH = UPDATE_ITER_LOW * 2   # 经历多少个step以后更新上层网络，20差不多是游戏里的18s少一点
@@ -33,8 +35,8 @@ flags.DEFINE_bool("training", True, "Whether to train agents.")
 flags.DEFINE_bool("continuation", False, "Continuously training.")
 flags.DEFINE_float("learning_rate", 5e-4, "Learning rate for training.")
 flags.DEFINE_float("discount", 0.99, "Discount rate for future rewards.")
-flags.DEFINE_integer("max_steps", int(2), "Total steps for training.")    # 这里的step指的是训练的最大回合数，而不是回合episode里的那个step
-flags.DEFINE_integer("snapshot_step", int(20), "Step for snapshot.")
+flags.DEFINE_integer("max_steps", int(1000), "Total steps for training.")    # 这里的step指的是训练的最大回合episode数，而不是回合episode里的那个step
+flags.DEFINE_integer("snapshot_step", int(50), "Step for snapshot.")
 flags.DEFINE_string("snapshot_path", "./snapshot/", "Path for snapshot.")
 flags.DEFINE_string("log_path", "./log/", "Path for log.")
 # 这里的Device每个机器运行的时候都不一样，依据配置设定
@@ -42,7 +44,7 @@ flags.DEFINE_string("device", "0", "Device for training.")
 
 flags.DEFINE_string("map", "Simple64", "Name of a map to use.")         # 2018/08/03: Simple64枪兵互拼新加代码
 
-flags.DEFINE_bool("render", True, "Whether to render with pygame.")
+flags.DEFINE_bool("render", False, "Whether to render with pygame.")
 flags.DEFINE_integer("screen_resolution", 64, "Resolution for screen feature layers.")
 flags.DEFINE_integer("minimap_resolution", 64, "Resolution for minimap feature layers.")
 flags.DEFINE_integer("step_mul", 8, "Game steps per agent step.")   # APM参数，step_mul为8相当于APM180左右
@@ -61,8 +63,8 @@ flags.DEFINE_enum("difficulty", "very_easy", sc2_env.Difficulty._member_names_, 
 flags.DEFINE_integer("max_agent_steps", 10000, "Total agent steps.")       # 这里的step指的是回合episode里的那个step
 flags.DEFINE_bool("profile", False, "Whether to turn on code profiling.")
 flags.DEFINE_bool("trace", False, "Whether to trace the code execution.")
-# 线程数
-flags.DEFINE_integer("parallel", 1, "How many instances to run in parallel.")
+# 线程数的最佳值是5 @ 1080ti单卡 + i7 6700
+flags.DEFINE_integer("parallel", 5, "How many instances to run in parallel.")
 flags.DEFINE_bool("save_replay", False, "Whether to save a replay at the end.")
 
 FLAGS(sys.argv)
@@ -132,7 +134,8 @@ def run_thread(agent, map_name, visualize, ind_thread):  # A3CAgent对象，地�
           # agent.update(replay_buffer, FLAGS.discount, learning_rate, counter)
 
           iswin = replay_buffer_2[-1][-1].reward
-          print("obs.reward_1:", iswin)
+          # print("obs.reward_1:", iswin)
+          print("Episode_counter: ", counter)
 
 
         # 更新下层网络

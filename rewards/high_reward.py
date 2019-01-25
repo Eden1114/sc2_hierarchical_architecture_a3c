@@ -6,7 +6,7 @@ import numpy as np
 
 def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
 
-    reward = 0
+    reward = 0.0
     minerals = next_obs.observation.player.minerals
     last_minerals = obs.observation.player.minerals
     minerals_change = minerals - last_minerals  # 矿改变量
@@ -20,6 +20,7 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
     food_remain = next_obs.observation["player"][4] - next_obs.observation["player"][3] #剩余人口
 
     step = gl.get_value(ind_thread, "num_frames") #当前的步数，是UPDATE_GLOBAL_ITER的倍数，这里是50的倍数。1秒2.8步，50步约为18s
+    # 190125改写各项系数，yxy
 
     # print("step is ",step)
     # print("workernumber ", obs.observation.player.food_workers)
@@ -28,7 +29,7 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
     # 动作执行成功或失败：micro_is_done出现-1的情况，就说明宏动作失败了（出现微动作id不在available_action_list里的情况）
     # 同时，切记！ micro_is_done为1时，不要给正奖励，因为这不能说明宏动作是成功了还是失败了
     if micro_isdone == -1:
-      reward -= 666
+      reward -= 50
 
     if action.function is 140 or 143 or 144 or 168:  # 如果是取消类动作
         reward -= 10
@@ -36,38 +37,43 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
         reward -= 10
 
     #矿变化相关reward
-    if minerals >= 500 and minerals_change>=0:
+    #190125改写，yxy
+    if minerals >= 500 and minerals_change >= 0:
         reward -= 50
-    if minerals >= 400 and minerals < 500 and minerals_change>=0:
-        reward -= 0.5*(minerals-400)
+    # if minerals >= 200 and minerals < 500 and minerals_change>=0:
+    #     reward += 20-0.5*(minerals-200)
+    if 500 > minerals >= 200 and minerals_change >= 0:
+        reward += 20 - 0.2 * (minerals - 200)
     if 0 <= minerals < 200 and minerals_change > 0:
-        reward += 1
+        reward += minerals/10
 
 
     #闲置农民惩罚
     if idle_worker > 0:
-        reward -= 2 * idle_worker
+        reward -= 20 * idle_worker
         # print("idle_workers are :%d"%idle_worker)
 
-    #剩余人口惩罚
-    if food_remain < 2:    # food_remain可能为负数
-        reward -= 5 * np.abs(food_remain)
-        if food_remain ==0 :
-            reward -= 50
+    #剩余人口奖惩
+    if 0 < food_remain < 2:    # food_remain可能为负数
+        reward -= 10 * food_remain
+    if food_remain <= 0:
+        reward -= 50
 
-    #军队数量增加奖励
-    if army_change>0:
-        reward += 50
-
-    #农民数量增加奖励
-    worker_army = next_obs.observation["player"][6]
-    if worker_change>0 and  worker_army <=20:
+    #农民数量奖惩   yxy
+    worker_count = next_obs.observation["player"][6]
+    if worker_change > 0 and worker_count <= 22:
         reward += 10
+    if worker_change > 0 and worker_count > 22:
+        reward -= 10
 
-    #没有军队惩罚
-    food_army = next_obs.observation["player"][5]
-    if step >= 500 and food_army == 0:
-        reward -= 20
+    #军队数量奖惩   yxy
+    army_count = next_obs.observation["player"][5]
+    if army_count > 0:
+        reward += 30*army_count
+    if step >= 500 and army_count == 0:
+        reward -= 100
+    if army_change > 0:
+        reward += 50
 
 
     # 建造得分计算，补给站是100，兵营是150，指挥中心是400
@@ -105,10 +111,10 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
         gl.add_value_list(ind_thread, "brrack_location", [0, 0]) # 暂时用"(x，y)"代替坐标
 
     if  step >= 300 and  supply_num == 0:
-        reward -= 50
+        reward -= 300
 
     if  step >= 500 and  barrack_num == 0:
-        reward -= 50
+        reward -= 300
 
     if step >= 50 and obs.observation.player.food_workers <= 12:
         reward -= 10
@@ -116,9 +122,9 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
 
     if build_score_change > 0:
         if build_score_change == 150:
-            reward += 50
+            reward += 100
         elif build_score_change == 100:
-            reward += 30
+            reward += 50
             # print("buile_score_change is %d"%build_score_change)
 
 
@@ -139,12 +145,12 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
         reward += killed_value_structures_change
 
     # 生存时间与胜利条件判断
-    if step >1000:
+    if step > 1000:
         step_r = step - 1000
-        reward += (step_r / 100)
-    if step >= 3000 and  obs.observation.player.food_workers>=12 and obs.observation.score_cumulative.total_value_structures >=400:
+        reward += (step_r / 10)
+    if step >= 3000 and obs.observation.player.food_workers >= 12 and obs.observation.score_cumulative.total_value_structures >= 400:
      #存活18分钟，人口大于12，基地没被打爆
-       reward = 1000
+        reward = 1000
 
     #归一化到正负1之间
     reward = float(reward / 1000)
@@ -153,5 +159,5 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
     if reward <= -1.0:
         reward = -1.0
 
-    print("thread%d reward is %.4f" % (ind_thread, reward))
+    print("Thread%d high_reward is %.4f" % (ind_thread, reward))
     return reward
