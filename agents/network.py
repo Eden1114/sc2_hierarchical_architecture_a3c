@@ -182,7 +182,7 @@ def build_low_net(minimap, screen, info, dir_high, act_id):
 
           info_c = tf.concat([layers.flatten(info), high_net_output], axis=1)
 
-          info_fc_c = layers.fully_connected(layers.flatten(info),
+          info_fc_c = layers.fully_connected(layers.flatten(info_c),
                                              num_outputs=256,
                                              activation_fn=tf.tanh,
                                              scope='info_fc_low')

@@ -4,7 +4,7 @@ def global_init(index):
 
     for i in range(index):
         dict = {"num_frames": -9999, "ind_micro": -9999, "act_id_micro": -9999, "dir_high": -9999,
-                "supply_num": -9999, "barrack_num": -9999, "brrack_location": [],
+                "supply_num": -9999, "barrack_num": -9999, "barrack_location": [],
                 "micro_isdone":[],
                 "reward_low_list": [], "reward_high_list": [],
                 "sum_high_reward": -9999,"sum_low_reward": -9999,
