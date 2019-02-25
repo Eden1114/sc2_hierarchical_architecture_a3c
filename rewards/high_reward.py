@@ -57,14 +57,14 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
     if 0 < food_remain < 2:    # food_remain可能为负数
         reward -= 10 * food_remain
     if food_remain <= 0:
-        reward -= 50
+        reward -= 500
 
     #农民数量奖惩   yxy
     worker_count = next_obs.observation["player"][6]
     if worker_change > 0 and worker_count <= 22:
         reward += 10
     if worker_change > 0 and worker_count > 22:
-        reward -= 10
+        reward -= 100
 
     #军队数量奖惩   yxy
     army_count = next_obs.observation["player"][5]
@@ -107,8 +107,8 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
         # print("thread%d barrack_num is %d" % (ind_thread, barrack_num))
 
     #兵营编号
-    if  build_score_change == 150 and barrack_num != 0:
-        gl.add_value_list(ind_thread, "brrack_location", [0, 0]) # 暂时用"(x，y)"代替坐标
+    if build_score_change == 150 and barrack_num > 0:
+        gl.add_value_list(ind_thread, "barrack_location", [0, 0]) # 暂时用"(x，y)"代替坐标
 
     if  step >= 300 and  supply_num == 0:
         reward -= 300

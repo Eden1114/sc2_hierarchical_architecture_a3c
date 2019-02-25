@@ -60,7 +60,7 @@ flags.DEFINE_enum("agent2_race", "terran", sc2_env.Race._member_names_,  # pylin
 flags.DEFINE_enum("difficulty", "very_easy", sc2_env.Difficulty._member_names_,  # pylint: disable=protected-access
                   "If agent2 is a built-in Bot, it's strength.")
 
-flags.DEFINE_integer("max_agent_steps", 10000, "Total agent steps.")       # 这里的step指的是回合episode里的那个step
+flags.DEFINE_integer("max_agent_steps", 5000, "Total agent steps.")       # 这里的step指的是回合episode里的那个step
 flags.DEFINE_bool("profile", False, "Whether to turn on code profiling.")
 flags.DEFINE_bool("trace", False, "Whether to trace the code execution.")
 # 线程数的最佳值是5 @ 1080ti单卡 + i7 6700
