@@ -1,9 +1,10 @@
 import matplotlib.pyplot as plt
 import numpy as np
+
 """
 Python-Matplotlib 9 颜色和样式
 
- 
+
 
 1 颜色
 　　八种内建默认颜色缩写
@@ -35,7 +36,7 @@ Python-Matplotlib 9 颜色和样式
 　　　　kp-
 """
 
-
+# tmp0 = np.load('./DataForAnalysis/victory_or_defeat_parallel0.npy')
 # tmp1 = np.load('./DataForAnalysis/victory_or_defeat_parallel1.npy')
 # tmp2 = np.load('./DataForAnalysis/victory_or_defeat_parallel2.npy')
 # tmp3 = np.load('./DataForAnalysis/victory_or_defeat_parallel3.npy')
@@ -43,19 +44,52 @@ Python-Matplotlib 9 颜色和样式
 # tmp5 = np.load('./DataForAnalysis/victory_or_defeat_parallel5.npy')
 # tmp6 = np.load('./DataForAnalysis/victory_or_defeat_parallel6.npy')
 # tmp7 = np.load('./DataForAnalysis/victory_or_defeat_parallel7.npy')
-# tmp0 = np.load('./DataForAnalysis/victory_or_defeat_parallel0.npy')
-tmp2 = np.load('./DataForAnalysis/high_reward_of_episode51parallel0.npy')
-tmp3 = np.load('./DataForAnalysis/high_reward_of_episode1parallel0.npy')
+
+# tmp0 = np.load('./DataForAnalysis/high_reward_list_parallel0.npy')
+# tmp1 = np.load('./DataForAnalysis/high_reward_of_episode1parallel0.npy')
+# tmp2 = np.load('./DataForAnalysis/high_reward_of_episode51parallel0.npy')
+# tmp3 = np.load('./DataForAnalysis/high_reward_of_episode101parallel0.npy')
+# tmp4 = np.load('./DataForAnalysis/high_reward_of_episode151parallel0.npy')
+# tmp0 = np.load('./DataForAnalysis/low_reward_list_parallel0.npy')
+# tmp1 = np.load('./DataForAnalysis/low_reward_of_episode1parallel0.npy')
+# tmp2 = np.load('./DataForAnalysis/low_reward_of_episode51parallel0.npy')
+# tmp3 = np.load('./DataForAnalysis/low_reward_of_episode101parallel0.npy')
+# tmp4 = np.load('./DataForAnalysis/low_reward_of_episode151parallel0.npy')
+# tmp0 = np.load('./DataForAnalysis/high_reward_list_parallel0.npy')
+# tmp1 = np.load('./DataForAnalysis/high_reward_list_parallel1.npy')
+# tmp2 = np.load('./DataForAnalysis/high_reward_list_parallel2.npy')
+# tmp3 = np.load('./DataForAnalysis/high_reward_list_parallel3.npy')
+# tmp4 = np.load('./DataForAnalysis/high_reward_list_parallel4.npy')
+tmp0 = np.load('./DataForAnalysis/low_reward_list_parallel0.npy')
+tmp1 = np.load('./DataForAnalysis/low_reward_list_parallel1.npy')
+tmp2 = np.load('./DataForAnalysis/low_reward_list_parallel2.npy')
+tmp3 = np.load('./DataForAnalysis/low_reward_list_parallel3.npy')
+tmp4 = np.load('./DataForAnalysis/low_reward_list_parallel4.npy')
+
+# tmp0 = np.load('./DataForAnalysis/high_reward_of_episode151parallel0.npy')
+# tmp1 = np.load('./DataForAnalysis/high_reward_of_episode201parallel0.npy')
+# tmp2 = np.load('./DataForAnalysis/high_reward_of_episode251parallel0.npy')
+# tmp3 = np.load('./DataForAnalysis/high_reward_of_episode301parallel0.npy')
+# tmp4 = np.load('./DataForAnalysis/high_reward_of_episode351parallel0.npy')
+# tmp0 = np.load('./DataForAnalysis/high_reward_of_episode151parallel0.npy')
+# tmp1 = np.load('./DataForAnalysis/high_reward_of_episode151parallel1.npy')
+# tmp2 = np.load('./DataForAnalysis/high_reward_of_episode151parallel2.npy')
+# tmp3 = np.load('./DataForAnalysis/high_reward_of_episode151parallel3.npy')
+# tmp4 = np.load('./DataForAnalysis/high_reward_of_episode151parallel4.npy')
 # print(tmp0)
 # print(tmp1)
-print(tmp2)
-print(tmp3)
+# print(tmp2)
+# print(tmp3)
 # print(tmp4)
 # print(tmp5)
 # print(tmp6)
 # print(tmp7)
 
-plt.plot(np.arange(len(tmp2)), tmp2, 'b-')
+plt.plot(np.arange(len(tmp0)), tmp0, 'b-')
+plt.plot(np.arange(len(tmp1)), tmp1, 'r-')
+plt.plot(np.arange(len(tmp2)), tmp2, 'g-')
+plt.plot(np.arange(len(tmp3)), tmp3, 'y-')
+plt.plot(np.arange(len(tmp4)), tmp4, 'm-')
 # plt.plot(np.arange(len(tmp3)), tmp3, 'r-')
 # plt.plot(np.arange(len(tmp50)), tmp50, 'g-')
 # plt.plot(np.arange(len(tmp49)), tmp49, 'y-')
