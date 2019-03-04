@@ -36,7 +36,7 @@ flags.DEFINE_bool("continuation", False, "Continuously training.")
 # flags.DEFINE_bool("continuation", True, "Continuously training.")
 flags.DEFINE_float("learning_rate", 5e-4, "Learning rate for training.")
 flags.DEFINE_float("discount", 0.99, "Discount rate for future rewards.")
-flags.DEFINE_integer("max_steps", int(300),
+flags.DEFINE_integer("max_steps", int(1000),
                      "Total steps for training.")  # 这里的step指的是训练的最大回合episode数，而不是回合episode里的那个step
 flags.DEFINE_integer("snapshot_step", int(50), "Step for snapshot.")
 flags.DEFINE_string("snapshot_path", "./snapshot/", "Path for snapshot.")
@@ -146,9 +146,9 @@ def run_thread(agent, map_name, visualize, ind_thread):  # A3CAgent对象，地�
                 # if stepsInOneEp % UPDATE_ITER_LOW == 0 or is_done:
                 if call_step_low:
                     learning_rate_a_low = FLAGS.learning_rate * (
-                                1 - 0.9 * counter / FLAGS.max_steps)  # 根据当前进行完的回合数量修改学习速率（减小）
+                            1 - 0.9 * counter / FLAGS.max_steps)  # 根据当前进行完的回合数量修改学习速率（减小）
                     learning_rate_c_low = FLAGS.learning_rate * (
-                                1 - 0.9 * counter / FLAGS.max_steps)  # 根据当前进行完的回合数量修改学习速率（减小）
+                            1 - 0.9 * counter / FLAGS.max_steps)  # 根据当前进行完的回合数量修改学习速率（减小）
                     agent.update_low(ind_thread, replay_buffer_1, dir_high_buffer_1, FLAGS.discount,
                                      learning_rate_a_low, learning_rate_c_low, counter, macro_type, coord_type)
                     # time.sleep(2)
@@ -161,9 +161,9 @@ def run_thread(agent, map_name, visualize, ind_thread):  # A3CAgent对象，地�
                 # if stepsInOneEp % UPDATE_ITER_HIGH == 0 or is_done:
                 if ind_last == -99 or ind_last == 666:
                     learning_rate_a_high = FLAGS.learning_rate * (
-                                1 - 0.9 * counter / FLAGS.max_steps)  # 根据当前进行完的回合数量修改学习速率（减小）
+                            1 - 0.9 * counter / FLAGS.max_steps)  # 根据当前进行完的回合数量修改学习速率（减小）
                     learning_rate_c_high = FLAGS.learning_rate * (
-                                1 - 0.9 * counter / FLAGS.max_steps)  # 根据当前进行完的回合数量修改学习速率（减小）
+                            1 - 0.9 * counter / FLAGS.max_steps)  # 根据当前进行完的回合数量修改学习速率（减小）
                     agent.update_high(ind_thread, replay_buffer_2, dir_high_buffer_2, FLAGS.discount,
                                       learning_rate_a_high, learning_rate_c_high, counter)
                     # time.sleep(2)
@@ -176,7 +176,7 @@ def run_thread(agent, map_name, visualize, ind_thread):  # A3CAgent对象，地�
                     GL.add_value_list(ind_thread, "reward_low_list",
                                       GL.get_value(ind_thread, "sum_low_reward") / num_of_call_step_low)
                     # iswin = replay_buffer_1[-1][-1].reward
-                    print("obs.reward-2:", iswin)
+                    print("obs.reward_isWin:", iswin)
                     GL.add_value_list(ind_thread, "victory_or_defeat", iswin)
                     if counter % FLAGS.snapshot_step == 1:  # 到规定回合数存储网络参数（tf.train.Saver().save(),见a3c_agent）
                         agent.save_model(SNAPSHOT, counter)
@@ -239,7 +239,7 @@ def _main(unused_argv):
     threads = []
     for i in range(PARALLEL - 1):  # 建立PARALLEL - 1个线程并运行
         t = threading.Thread(target=run_thread, args=(
-        agents[i], FLAGS.map, False, i))  # threading是python自己的线程模块，参数1为线程运行的函数名称，参数2为该函数需要的参数
+            agents[i], FLAGS.map, False, i))  # threading是python自己的线程模块，参数1为线程运行的函数名称，参数2为该函数需要的参数
         threads.append(t)
         t.daemon = True
         t.start()
