@@ -54,7 +54,7 @@ class A3CAgent(object):
         # Epsilon schedule
         self.epsilon = [0.05, 0.2]
 
-    def build_model(self, reuse, dev, ntype):
+    def build_model(self, reuse, dev):
         with tf.variable_scope(self.name) and tf.device(dev):
             if reuse:
                 # 比如训练模式下4线程，除了第一个build_model的reuse是False以外，其他的均为True（main文件 124行）

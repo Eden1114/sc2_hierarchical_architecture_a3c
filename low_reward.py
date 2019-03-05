@@ -76,7 +76,7 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type):
     else:
         # 对己方操作
         if macro_type == 0:
-            print("Low_screen to self")
+            # print("Low_screen to self")
             dis = math.sqrt((coordinate[0] - ourside[0]) ** 2 + (coordinate[1] - ourside[1]) ** 2)
             if 2 < dis <= 45:  # 0304, 25*1.4=35
                 # reward = 500

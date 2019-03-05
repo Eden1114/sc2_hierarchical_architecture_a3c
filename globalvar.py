@@ -40,3 +40,13 @@ def get_list():
     list_actions = {0: train_scv, 1: build_supply, 2: build_barrack, 3: train_marine, 4: idle_worker,
                     5: all_army_attack}
     return list_actions, len(list_actions)
+
+def episode_init(ind_thread):
+    set_value(ind_thread, "ind_micro", -1)
+    set_value(ind_thread, "supply_num", 0)
+    set_value(ind_thread, "barrack_num", 0)
+    set_value(ind_thread, "barrack_location", [])
+    set_value(ind_thread, "sum_high_reward", 0)
+    set_value(ind_thread, "sum_low_reward", 0)
+    set_value(ind_thread, "high_reward_of_episode", [])
+    set_value(ind_thread, "low_reward_of_episode", [])

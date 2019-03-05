@@ -5,6 +5,7 @@ import time
 from pysc2.lib import actions
 from macro_actions import action_micro
 import globalvar as GL
+
 list_actions, _ = GL.get_list()
 
 
@@ -14,25 +15,20 @@ def run_loop(agents, env, max_steps, ind_thread):
     start_time = time.time()
     try:
         while True:  # 底下发生的是一个episode内的过程
-            GL.set_value(ind_thread, "ind_micro", -1)
+            # 每局游戏需要用的全局变量清空
+            GL.episode_init(ind_thread)
             num_steps = 0  # 计算回合里的step数
-            GL.set_value(ind_thread, "supply_num", 0)  # 每局游戏需要用的全局变量清空
-            GL.set_value(ind_thread, "barrack_num", 0)
-            GL.set_value(ind_thread, "barrack_location", [])
-            GL.set_value(ind_thread, "sum_high_reward", 0)
-            GL.set_value(ind_thread, "sum_low_reward", 0)
-            GL.set_value(ind_thread, "high_reward_of_episode", [])
-            GL.set_value(ind_thread, "low_reward_of_episode", [])
+            num_call_step_low = 0  # 计算回合内调用下层网络的次数
             timesteps = env.reset()
             # reset函数返回TimeStep四元组（sc2_env.py 512行），包含的信息有4种，在知乎上PySC2详解的文章里有介绍
             for a in agents:  # 为后面的for agent, timestep in zip(agents, timesteps) 快速遍历提供方便，所以写成单一元素的列表
                 a.reset()
+
             while True:  # 底下发生的是回合内一个step的过程
                 ind_last = GL.get_value(ind_thread, "ind_micro")
                 num_steps += 1
                 GL.set_value(ind_thread, "num_steps", num_steps)
                 last_timesteps = timesteps
-
                 # DHN add:
                 if ind_last == -1 or ind_last == -99 or ind_last == 666:
                     # ind_last == -99 (表示宏动作里的微动作执行失败)
@@ -49,10 +45,12 @@ def run_loop(agents, env, max_steps, ind_thread):
 
                 dir_high = GL.get_value(ind_thread, "dir_high")
                 action, call_step_low, act_id, macro_type, coord_type = action_micro(ind_thread, dir_high,
-                                                                                     ind_todo)  # 关键一步，调用了macro_action计算出选择的action和其他参数。
+                                                                                     ind_todo)
+                # 关键一步，调用了macro_action.action_micro计算出选择的action和其他参数。
                 # 如果call_step_low为False，则act_id没用了，直接使用上行中的action
                 # 如果其为True，则进入以下的模块，action没用了，act_id被使用来计算新的action
                 if call_step_low:
+                    num_call_step_low += 1
                     GL.set_value(ind_thread, "act_id_micro", ind_todo)
                     target_pack = [agent.step_low(ind_thread, timestep, dir_high, ind_todo) for agent, timestep in
                                    zip(agents, timesteps)]
@@ -95,8 +93,8 @@ def run_loop(agents, env, max_steps, ind_thread):
                 # Only for a single player!
                 is_done = (num_steps >= max_steps) or timesteps[0].last()
                 # timesteps[0]是timesteps的第一个变量step_type（状态类型），last()为True即到了末状态
-                yield [last_timesteps[0], action[0],
-                       timesteps[0]], is_done, num_steps, call_step_low, macro_type, coord_type
+                yield [last_timesteps[0], action[0], timesteps[0]], \
+                      is_done, num_steps, call_step_low, num_call_step_low, macro_type, coord_type
                 # yield适用于函数返回内容较多，占用内存量很大的情况。可以看成返回了一个列表（实际不是）
                 # 详解见http://www.runoob.com/w3cnote/python-yield-used-analysis.html
                 if is_done:
