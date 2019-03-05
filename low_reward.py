@@ -6,7 +6,7 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
     reward = 0
     # 坐标x方向向下为正，y方向向右为正，左上角是[0, 0]
     ourside = [20, 25]
-    enemyside = [52, 49]
+    enemyside = [44, 39]
     supply = [20, 35]
     barrack = [25, 30]
     build_score_change = next_obs.observation["score_cumulative"][4] - obs.observation["score_cumulative"][4]
@@ -46,7 +46,7 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
             reward = -1000
         reward = float(reward / 1000)
         if reward != 0:
-            print("build_supply_reward: %.4f", reward)
+            print("build_supply_reward: %.4f" % reward)
         return reward
 
     # build_barrack
@@ -69,7 +69,7 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
             reward = -1000
         reward = float(reward / 1000)
         if reward != 0:
-            print("build_barrack_reward: %.4f", reward)
+            print("build_barrack_reward: %.4f" % reward)
         return reward
 
     # 坐标类型为minimap
