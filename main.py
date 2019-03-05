@@ -128,6 +128,9 @@ def run_thread(agent, map_name, visualize, ind_thread):  # A3CAgent对象，地�
                         global COUNTER
                         COUNTER += 1
                         counter = COUNTER
+                iswin = replay_buffer_2[-1][-1].reward
+                print("Episode_counter: ", counter)
+                print("obs.reward_isWin:", iswin)
 
                         # 更新下层网络
                 if call_step_low:
@@ -153,9 +156,6 @@ def run_thread(agent, map_name, visualize, ind_thread):  # A3CAgent对象，地�
                     dir_high_buffer_2 = []
 
                 if is_done:  # 最终状态，后续处理
-                    iswin = replay_buffer_2[-1][-1].reward
-                    print("Episode_counter: ", counter)
-                    print("obs.reward_isWin:", iswin)
                     GL.add_value_list(ind_thread, "victory_or_defeat", iswin)
                     GL.add_value_list(ind_thread, "reward_high_list",
                                       GL.get_value(ind_thread, "sum_high_reward") / num_steps)

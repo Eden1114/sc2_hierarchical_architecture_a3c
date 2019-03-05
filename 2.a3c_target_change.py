@@ -271,7 +271,7 @@ def run(agent, map_name):
 
 max_epoch = 4000
 parallel = 3
-map_name = 'MoveToBeacon'
+map_name = 'Simple64'
 learning_rate = 5e-4
 action_num = len(actions.FUNCTIONS)
 
@@ -286,13 +286,13 @@ sess.run(tf.global_variables_initializer())
 
 threads = []
 for i in range(parallel - 1):
-    t = threading.Thread(target=run, args=(agents[i], "MoveToBeacon"))
+    t = threading.Thread(target=run, args=(agents[i], map_name))
     threads.append(t)
     t.daemon = True
     t.start()
     time.sleep(5)
 
-run(agents[-1], "MoveToBeacon")
+run(agents[-1], map_name)
 
 coord = tf.train.Coordinator()
 coord.join(threads)
