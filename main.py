@@ -1,81 +1,38 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-
 import os
 import sys
 import time
 import importlib
 import threading
-
 from absl import app
 from absl import flags
-
 from pysc2 import maps
-from pysc2.env import available_actions_printer
-from pysc2.env import sc2_env
 from pysc2.lib import stopwatch
 import tensorflow as tf
 
-from run_loop import run_loop
+from run_thread import run_thread
+from config import config_init
 import globalvar as GL
 import numpy as np
 
-COUNTER = 0
 LOCK = threading.Lock()
-
-# 每次运行时设置：training，continuation，max_episodes，snapshot_step， render，parallel
-
 # DHN add:
 UPDATE_ITER_LOW = 10  # 经历多少个step以后更新下层网络，10差不多是游戏里的4s少一点
 UPDATE_ITER_HIGH = UPDATE_ITER_LOW * 2  # 经历多少个step以后更新上层网络，20差不多是游戏里的18s少一点
 
-FLAGS = flags.FLAGS  # 定义超参数
-flags.DEFINE_bool("training", True, "Whether to train agents.")
-flags.DEFINE_bool("continuation", False, "Continuously training.")
-# flags.DEFINE_bool("continuation", True, "Continuously training.")
-flags.DEFINE_float("learning_rate", 5e-4, "Learning rate for training.")
-flags.DEFINE_float("discount", 0.99, "Discount rate for future rewards.")
-flags.DEFINE_integer("max_episodes", int(100), "Total episodes for training.")  # 训练的最大回合episode数
-flags.DEFINE_integer("snapshot_step", int(20), "Step for snapshot.")
-flags.DEFINE_string("snapshot_path", "./snapshot/", "Path for snapshot.")
-flags.DEFINE_string("log_path", "./log/", "Path for log.")
-# 这里的Device每个机器运行的时候都不一样，依据配置设定
-flags.DEFINE_string("device", "0", "Device for training.")
-flags.DEFINE_string("map", "Simple64", "Name of a map to use.")  # 2018/08/03: Simple64枪兵互拼新加代码
-flags.DEFINE_bool("render", False, "Whether to render with pygame.")
-flags.DEFINE_integer("screen_resolution", 64, "Resolution for screen feature layers.")
-flags.DEFINE_integer("minimap_resolution", 64, "Resolution for minimap feature layers.")
-flags.DEFINE_integer("step_mul", 8, "Game steps per agent step.")  # APM参数，step_mul为8相当于APM180左右
-flags.DEFINE_string("agent", "a3c_agent.A3CAgent", "Which agent to run.")
-# flags.DEFINE_string("net", "fcn", "atari or fcn.")
-flags.DEFINE_string("net", "hierarchical", "network architecture for logging")
-flags.DEFINE_string("agent_race", 'terran', "Agent's race.")
-# 2018/08/03: Simple64枪兵互拼新加代码
-flags.DEFINE_string("agent2", "Bot", "Second agent, either Bot or agent class.")
-flags.DEFINE_enum("agent2_race", "terran", sc2_env.Race._member_names_,  # pylint: disable=protected-access
-                  "Agent 2's race.")
-flags.DEFINE_enum("difficulty", "very_easy", sc2_env.Difficulty._member_names_,  # pylint: disable=protected-access
-                  "If agent2 is a built-in Bot, it's strength.")
-flags.DEFINE_integer("max_agent_steps", 5000, "Total agent steps.")  # 这里的step指的是回合episode里的那个step
-flags.DEFINE_bool("profile", False, "Whether to turn on code profiling.")
-flags.DEFINE_bool("trace", False, "Whether to trace the code execution.")
-# 线程数的最佳值是4 @ 1080ti单卡 + i7 6700
-flags.DEFINE_integer("parallel", 4, "How many instances to run in parallel.")
-flags.DEFINE_bool("save_replay", False, "Whether to save a replay at the end.")
-
+FLAGS = config_init()
 FLAGS(sys.argv)
-if FLAGS.training:  # 疑问：为啥训练模式跑gpu，回合里最大步数为60步；非训练模式跑cpu，回合里最大步数为100000步？
+if FLAGS.training:
     PARALLEL = FLAGS.parallel  # PARALLEL 指定开几个线程（几个游戏窗口在跑星际2）
-    MAX_AGENT_STEPS = FLAGS.max_agent_steps  # 回合里agent的最大步数
     DEVICE = ['/gpu:' + dev for dev in FLAGS.device.split(',')]
 else:
     PARALLEL = 1
-    MAX_AGENT_STEPS = 1e5  # 回合里agent的最大步数
     DEVICE = ['/cpu:0']
 
 GL.global_init(PARALLEL)
-
+COUNTER = GL.get_episode_counter()
 LOG = FLAGS.log_path + FLAGS.map + '/' + FLAGS.net
 SNAPSHOT = FLAGS.snapshot_path + FLAGS.map + '/' + FLAGS.net
 ANALYSIS = './DataForAnalysis/'
@@ -87,10 +44,6 @@ if not os.path.exists(ANALYSIS):
     os.makedirs(ANALYSIS)
 
 
-def run_thread(agent, map_name, visualize, ind_thread):  # A3CAgent对象，地图名（字符串），是否可视化feature map（布尔值）
-    players = [sc2_env.Agent(sc2_env.Race[FLAGS.agent_race])]
-    players.append(sc2_env.Bot(sc2_env.Race[FLAGS.agent2_race],
-                               sc2_env.Difficulty[FLAGS.difficulty]))  # 2018/08/03: 2018/08/03: Simple64枪兵互拼新加代码
     agent_interface = sc2_env.parse_agent_interface_format(  # 增加一个player的代码应该在run_thread开头这里修改
         feature_screen=FLAGS.screen_resolution,
         feature_minimap=FLAGS.minimap_resolution)
@@ -187,7 +140,6 @@ def _main(unused_argv):
     stopwatch.sw.enabled = FLAGS.profile or FLAGS.trace  # 应该是开启类似计时时钟这样的观测量
     stopwatch.sw.trace = FLAGS.trace
     maps.get(FLAGS.map)  # Assert the map exists.
-
     # Setup agents
     agent_module, agent_name = FLAGS.agent.rsplit(".", 1)
     agent_cls = getattr(importlib.import_module(agent_module), agent_name)  # 经过两行操作后，agent_cls就相当于A3CAgent类了，可用其构造对象
@@ -206,28 +158,27 @@ def _main(unused_argv):
         agents[i].setup(sess, summary_writer)  # setup各个agent，即 将唯一的sess和summary_writer赋予每个agent的进程
     # agent就是“包含agents.append(agent)的循环”当中的那个局部变量agent，局部变量能够在外部使用，大概是python(3)神奇的特性...所以agent就是最后一个创建的A3CAgent对象
     agent.initialize()  # run(tf.global_variables_initializer())以初始化每个agent中的tf图
-
+    # 模型读取
     if not FLAGS.training or FLAGS.continuation:  # 若不是训练模式 或 若是持续性训练，则利用原有数据（训练好的参数，存在了snapshot文件夹里）进行训练
-        global COUNTER
-        COUNTER = agent.load_model(SNAPSHOT)  # 全局变量COUNTER记录的是当前所有线程加在一起，总共完成的回合数
-
+        COUNTER = agent.load_model(SNAPSHOT)
+        GL.set_episode_counter(COUNTER)
+        # 全局变量COUNTER记录的是当前所有线程加在一起，总共完成的回合数
     # Run threads
     threads = []
     for i in range(PARALLEL - 1):  # 建立PARALLEL - 1个线程并运行
         t = threading.Thread(target=run_thread, args=(
-            agents[i], FLAGS.map, False, i))  # threading是python自己的线程模块，参数1为线程运行的函数名称，参数2为该函数需要的参数
+            agents[i], FLAGS.map, False, i, FLAGS, LOCK))  # threading是python自己的线程模块，参数1为线程运行的函数名称，参数2为该函数需要的参数
         threads.append(t)
         t.daemon = True
         t.start()
         time.sleep(5)
-
-    run_thread(agents[-1], FLAGS.map, FLAGS.render, PARALLEL - 1)
+    run_thread(agents[-1], FLAGS.map, FLAGS.render, PARALLEL - 1, FLAGS, LOCK)
     # 序号-1代表最后一个agent 这个线程运行时将可视化feature map（因为最后一个参数FLAGS.render为True，之前的几个线程改参数为False）
     for t in threads:
         t.join()  # 必须写 才能正常运行多线程
     if FLAGS.profile:
         print(stopwatch.sw)
-
+    # 数据记录
     for i in range(PARALLEL):
         np.save("./DataForAnalysis/low_reward_list_parallel" + str(i) + ".npy", GL.get_value(i, "reward_low_list"))
         np.save("./DataForAnalysis/high_reward_list_parallel" + str(i) + ".npy", GL.get_value(i, "reward_high_list"))

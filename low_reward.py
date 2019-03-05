@@ -7,13 +7,13 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
     # 坐标x方向向下为正，y方向向右为正，左上角是[0, 0]
     ourside = [20, 25]
     enemyside = [44, 39]
-    supply = [20, 35]
-    barrack = [25, 30]
+    barrack = [20, 35]
+    supply = [35, 20]
     build_score_change = next_obs.observation["score_cumulative"][4] - obs.observation["score_cumulative"][4]
     killed_value_units_change = 10 * (
-                next_obs.observation["score_cumulative"][5] - obs.observation["score_cumulative"][5])
+            next_obs.observation["score_cumulative"][5] - obs.observation["score_cumulative"][5])
     killed_value_structures_change = 10 * (
-                next_obs.observation["score_cumulative"][6] - obs.observation["score_cumulative"][6])
+            next_obs.observation["score_cumulative"][6] - obs.observation["score_cumulative"][6])
     army_change = next_obs.observation["player"][5] - obs.observation["player"][5]  # 军队变化
     dir_high = GL.get_value(ind_thread, "dir_high")
     ind_todo = GL.get_value(ind_thread, "ind_micro")
@@ -31,11 +31,11 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
         dis = math.sqrt((coordinate[0] - supply[0]) ** 2 + (coordinate[1] - supply[1]) ** 2)
         if 2 < dis <= 10:  # 0305
             # reward = 500
-            reward += 200 - dis * 2
+            reward += 100 - dis * 10
         elif dis <= 2:
             reward = 0
         else:
-            reward += 100 - dis * 10
+            reward -= dis * 10
 
         if build_score_change == 100:
             reward += 500
@@ -45,8 +45,8 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
         if reward < -1000:
             reward = -1000
         reward = float(reward / 1000)
-        if reward != 0:
-            print("build_supply_reward: %.4f" % reward)
+        # if reward != 0:
+        #     print("build_supply_reward: %.4f" % reward)
         return reward
 
     # build_barrack
@@ -78,7 +78,7 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
         if macro_type == 0:
             print("Low_minimap to self")
             dis = math.sqrt((coordinate[0] - ourside[0]) ** 2 + (coordinate[1] - ourside[1]) ** 2)
-            if dis <= 35:        #0304, 25*1.4=35
+            if dis <= 35:  # 0304, 25*1.4=35
                 reward = 500
                 reward += 100 - dis * 2
             else:

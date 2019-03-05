@@ -36,10 +36,10 @@ Python-Matplotlib 9 颜色和样式
 　　　　kp-
 """
 
-# tmp0 = np.load('./DataForAnalysis/victory_or_defeat_parallel0.npy')
-# tmp1 = np.load('./DataForAnalysis/victory_or_defeat_parallel1.npy')
-# tmp2 = np.load('./DataForAnalysis/victory_or_defeat_parallel2.npy')
-# tmp3 = np.load('./DataForAnalysis/victory_or_defeat_parallel3.npy')
+tmp0 = np.load('./DataForAnalysis/victory_or_defeat_parallel0.npy')
+tmp1 = np.load('./DataForAnalysis/victory_or_defeat_parallel1.npy')
+tmp2 = np.load('./DataForAnalysis/victory_or_defeat_parallel2.npy')
+tmp3 = np.load('./DataForAnalysis/victory_or_defeat_parallel3.npy')
 # tmp4 = np.load('./DataForAnalysis/victory_or_defeat_parallel4.npy')
 # tmp5 = np.load('./DataForAnalysis/victory_or_defeat_parallel5.npy')
 # tmp6 = np.load('./DataForAnalysis/victory_or_defeat_parallel6.npy')
@@ -89,7 +89,7 @@ plt.plot(np.arange(len(tmp0)), tmp0, 'b-')
 plt.plot(np.arange(len(tmp1)), tmp1, 'r-')
 plt.plot(np.arange(len(tmp2)), tmp2, 'g-')
 plt.plot(np.arange(len(tmp3)), tmp3, 'y-')
-plt.plot(np.arange(len(tmp4)), tmp4, 'm-')
+# plt.plot(np.arange(len(tmp4)), tmp4, 'm-')
 # plt.plot(np.arange(len(tmp3)), tmp3, 'r-')
 # plt.plot(np.arange(len(tmp50)), tmp50, 'g-')
 # plt.plot(np.arange(len(tmp49)), tmp49, 'y-')

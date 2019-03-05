@@ -10,7 +10,6 @@ def action_micro(ind_thread, dir_high, ind_todo):
     coord_type = 0  # 坐标类型： 0 screen，1 minimap
     call_step_low = False
     act_id = list_actions[dir_high][ind_todo]
-    # print("macro_actions", dir_high, ind_todo)
 
     # train_scv里固定写好坐标的动作
     if dir_high == 0 and ind_todo == 0:

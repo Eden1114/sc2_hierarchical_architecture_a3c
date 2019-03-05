@@ -1,6 +1,8 @@
 def global_init(index):
     global global_var_dict
+    global episode_counter
     global_var_dict = []
+    episode_counter = 0
 
     for i in range(index):
         dict = {"num_frames": -9999, "ind_micro": -9999, "act_id_micro": -9999, "dir_high": -9999,
@@ -13,6 +15,15 @@ def global_init(index):
         # micro_isdone 成功是1，失败是-1
         global_var_dict.append(dict)
 
+def episode_init(ind_thread):
+    set_value(ind_thread, "ind_micro", -1)
+    set_value(ind_thread, "supply_num", 0)
+    set_value(ind_thread, "barrack_num", 0)
+    set_value(ind_thread, "barrack_location", [])
+    set_value(ind_thread, "sum_high_reward", 0)
+    set_value(ind_thread, "sum_low_reward", 0)
+    set_value(ind_thread, "high_reward_of_episode", [])
+    set_value(ind_thread, "low_reward_of_episode", [])
 
 def set_value(index, name, value):
     global_var_dict[index][name] = value
@@ -41,12 +52,11 @@ def get_list():
                     5: all_army_attack}
     return list_actions, len(list_actions)
 
-def episode_init(ind_thread):
-    set_value(ind_thread, "ind_micro", -1)
-    set_value(ind_thread, "supply_num", 0)
-    set_value(ind_thread, "barrack_num", 0)
-    set_value(ind_thread, "barrack_location", [])
-    set_value(ind_thread, "sum_high_reward", 0)
-    set_value(ind_thread, "sum_low_reward", 0)
-    set_value(ind_thread, "high_reward_of_episode", [])
-    set_value(ind_thread, "low_reward_of_episode", [])
+def set_episode_counter(counter):
+    global episode_counter
+    episode_counter = counter
+
+
+def get_episode_counter():
+    # global episode_counter
+    return episode_counter
