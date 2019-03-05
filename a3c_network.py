@@ -33,7 +33,6 @@ def build_high_net(minimap, screen, info, num_macro_action):
                                            num_outputs=256,
                                            activation_fn=tf.tanh,
                                            scope='info_fc_high')
-
         feat_fc_a = tf.concat(
             [layers.flatten(mconv2_a), layers.flatten(sconv2_a), info_fc_a], axis=1)
         feat_fc_a = layers.fully_connected(feat_fc_a,
@@ -70,7 +69,6 @@ def build_high_net(minimap, screen, info, num_macro_action):
                                            num_outputs=256,
                                            activation_fn=tf.tanh,
                                            scope='info_fc_high')
-
         feat_fc_c = tf.concat(
             [layers.flatten(mconv2_c), layers.flatten(sconv2_c), info_fc_c], axis=1)
         feat_fc_c = layers.fully_connected(feat_fc_c,
@@ -114,38 +112,29 @@ def build_low_net(minimap, screen, info, dir_high, act_id):
                                    kernel_size=3,
                                    stride=1,
                                    scope='sconv2_low')
-
           feat_conv_a = tf.concat([mconv2_a, sconv2_a], axis=3)
-
           spatial_action_low = layers.conv2d(feat_conv_a,
                                              num_outputs=1,
                                              kernel_size=1,
                                              stride=1,
                                              activation_fn=tf.tanh,  # 从None改为tanh，即将值限制在-1到1
                                              scope='spatial_action_low')
-
-
           high_net_output = tf.concat([dir_high, act_id], axis=1)
-
           high_net_output = layers.fully_connected(high_net_output,
                                                    num_outputs=2,
                                                    activation_fn=tf.tanh,
                                                    scope='high_net_output_low')
-
           info_a = tf.concat([layers.flatten(info), high_net_output], axis=1)
-
           info_fc_a = layers.fully_connected(info_a,
                                              num_outputs=256,
                                              activation_fn=tf.tanh,
                                              scope='info_fc_low')
-
           feat_fc_a = tf.concat(
               [layers.flatten(spatial_action_low), info_fc_a], axis=1)
           feat_fc_a = layers.fully_connected(feat_fc_a,
                                              num_outputs=256,
                                              activation_fn=tf.nn.relu,
                                              scope='feat_fc_low')
-
           dir_low = layers.fully_connected(feat_fc_a,
                                            num_outputs=4096,
                                            activation_fn=tf.nn.softmax,
@@ -172,21 +161,17 @@ def build_low_net(minimap, screen, info, dir_high, act_id):
                                    kernel_size=3,
                                    stride=1,
                                    scope='sconv2_low')
-
           high_net_output = tf.concat([dir_high, act_id],axis=1)
-
           high_net_output = layers.fully_connected(high_net_output,
                                                 num_outputs=2,
                                                 activation_fn=tf.tanh,
                                                 scope='high_net_output_low')
 
           info_c = tf.concat([layers.flatten(info), high_net_output], axis=1)
-
-          info_fc_c = layers.fully_connected(layers.flatten(info),
+          info_fc_c = layers.fully_connected(layers.flatten(info_c),
                                              num_outputs=256,
                                              activation_fn=tf.tanh,
                                              scope='info_fc_low')
-
           feat_fc_c = tf.concat(
               [layers.flatten(mconv2_c), layers.flatten(sconv2_c), info_fc_c], axis=1)
           feat_fc_c = layers.fully_connected(feat_fc_c,

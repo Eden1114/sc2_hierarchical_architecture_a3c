@@ -19,12 +19,8 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
     worker_change = next_obs.observation["player"][6] - obs.observation["player"][6]  # 农民变化
     food_remain = next_obs.observation["player"][4] - next_obs.observation["player"][3]  # 剩余人口
 
-    step = gl.get_value(ind_thread, "num_frames")  # 当前的步数，是UPDATE_GLOBAL_ITER的倍数，这里是50的倍数。1秒2.8步，50步约为18s
+    step = gl.get_value(ind_thread, "num_steps")  # 当前的步数，是UPDATE_GLOBAL_ITER的倍数，这里是50的倍数。1秒2.8步，50步约为18s
     # 190125改写各项系数，yxy
-
-    # print("step is ",step)
-    # print("workernumber ", obs.observation.player.food_workers)
-    # print("num_frames is",gl.get_value("num_frames"))
 
     # 动作执行成功或失败：micro_is_done出现-1的情况，就说明宏动作失败了（出现微动作id不在available_action_list里的情况）
     # 同时，切记！ micro_is_done为1时，不要给正奖励，因为这不能说明宏动作是成功了还是失败了
