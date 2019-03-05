@@ -64,7 +64,7 @@ def action_micro(ind_thread, dir_high, ind_todo):
         print("Barrack_location: ", tem)
     # elif dir_high == 3 and ind_todo == 3:
     #     action = [actions.FunctionCall(function=1, arguments=[[20, 25]])]  # 移动镜头到标准位置
-    elif dir_high == 3 and ind_todo == 3:
+    elif dir_high == 3 and ind_todo == 7:
         action = [actions.FunctionCall(function=3, arguments=[[0], [5, 5], [30, 25]])]  # 框中一些scv
 
     else:

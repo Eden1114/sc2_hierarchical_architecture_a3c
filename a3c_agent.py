@@ -304,7 +304,7 @@ class A3CAgent(object):
             coord = [0, 0]
             # coord[0], coord[1] = [32, 32]
             coord[0], coord[1] = self.step_low(ind_thread, obs, dir_high_usedToFeedLowNet, act_ID)
-            reward = low_reward(next_obs, obs, coord, micro_isdone[i], macro_type, coord_type)
+            reward = low_reward(next_obs, obs, coord, micro_isdone[i], macro_type, coord_type, ind_thread)
             sum_low_reward += reward
             GL.add_value_list(ind_thread, "low_reward_of_episode", reward)
             act_id = action.function  # Agent在这一步中选择动作的id序号

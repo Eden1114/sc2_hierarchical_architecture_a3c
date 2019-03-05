@@ -1,17 +1,21 @@
 import math
+import globalvar as GL
 
 
-def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type):
+def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, ind_thread):
     reward = 0
     ourside = [20, 25]
     enemyside = [52, 49]
-
+    supply = [20, 35]
+    barrack = [25, 30]
     build_score_change = next_obs.observation["score_cumulative"][4] - obs.observation["score_cumulative"][4]
     killed_value_units_change = 10 * (
                 next_obs.observation["score_cumulative"][5] - obs.observation["score_cumulative"][5])
     killed_value_structures_change = 10 * (
                 next_obs.observation["score_cumulative"][6] - obs.observation["score_cumulative"][6])
     army_change = next_obs.observation["player"][5] - obs.observation["player"][5]  # 军队变化
+    dir_high = GL.get_value(ind_thread, "dir_high")
+    ind_todo = GL.get_value(ind_thread, "ind_micro")
 
     # if micro_isdone == -1:
     #     reward -= 100
@@ -19,6 +23,53 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type):
         reward -= 100
         # ！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
         # last_actions为[],代表动作函数合法但失败（比如造补给站在available_action_list里，但选的建造坐标在基地的位置上，则造不出来）
+
+    # 针对宏动作设计精准奖励
+    # build_supply
+    if dir_high == 1:
+        dis = math.sqrt((coordinate[0] - supply[0]) ** 2 + (coordinate[1] - supply[1]) ** 2)
+        if 2 < dis <= 10:  # 0305
+            # reward = 500
+            reward += 200 - dis * 2
+        elif dis <= 2:
+            reward = 0
+        else:
+            reward += 100 - dis * 10
+
+        if build_score_change == 100:
+            reward += 500
+
+        if reward > 1000:
+            reward = 1000
+        if reward < -1000:
+            reward = -1000
+        reward = float(reward / 1000)
+        if reward != 0:
+            print("build_supply_reward: ", reward)
+        return reward
+
+    # build_barrack
+    if dir_high == 2:
+        dis = math.sqrt((coordinate[0] - barrack[0]) ** 2 + (coordinate[1] - barrack[1]) ** 2)
+        if 2 < dis <= 10:  # 0305
+            # reward = 500
+            reward += 200 - dis * 2
+        elif dis <= 2:
+            reward = 0
+        else:
+            reward += 100 - dis * 10
+
+        if build_score_change == 150:
+            reward += 500
+
+        if reward > 1000:
+            reward = 1000
+        if reward < -1000:
+            reward = -1000
+        reward = float(reward / 1000)
+        if reward != 0:
+            print("build_barrack_reward: ", reward)
+        return reward
 
     # 坐标类型为minimap
     if coord_type == 1:
@@ -78,7 +129,7 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type):
         if macro_type == 0:
             # print("Low_screen to self")
             dis = math.sqrt((coordinate[0] - ourside[0]) ** 2 + (coordinate[1] - ourside[1]) ** 2)
-            if 2 < dis <= 45:  # 0304, 25*1.4=35
+            if 2 < dis <= 20:  # 0305
                 # reward = 500
                 reward += 200 - dis * 2
             elif dis <= 2:
@@ -91,7 +142,7 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type):
                     reward += 100
                 elif build_score_change == 100:
                     reward += 50
-        # 军队数量奖惩   yxy
+            # 军队数量奖惩   yxy
             if army_change > 0:
                 reward += 500
 
@@ -100,7 +151,6 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type):
             if killed_value_structures_change > 0:
                 reward += killed_value_structures_change
 
-            # reward *= 10
             if reward > 1000:
                 reward = 1000
             if reward < -1000:

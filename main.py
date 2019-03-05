@@ -60,8 +60,8 @@ flags.DEFINE_enum("difficulty", "very_easy", sc2_env.Difficulty._member_names_, 
 flags.DEFINE_integer("max_agent_steps", 5000, "Total agent steps.")  # 这里的step指的是回合episode里的那个step
 flags.DEFINE_bool("profile", False, "Whether to turn on code profiling.")
 flags.DEFINE_bool("trace", False, "Whether to trace the code execution.")
-# 线程数的最佳值是5 @ 1080ti单卡 + i7 6700
-flags.DEFINE_integer("parallel", 5, "How many instances to run in parallel.")
+# 线程数的最佳值是4 @ 1080ti单卡 + i7 6700
+flags.DEFINE_integer("parallel", 4, "How many instances to run in parallel.")
 flags.DEFINE_bool("save_replay", False, "Whether to save a replay at the end.")
 
 FLAGS(sys.argv)
@@ -129,10 +129,8 @@ def run_thread(agent, map_name, visualize, ind_thread):  # A3CAgent对象，地�
                         COUNTER += 1
                         counter = COUNTER
                 iswin = replay_buffer_2[-1][-1].reward
-                print("Episode_counter: ", counter)
-                print("obs.reward_isWin:", iswin)
 
-                        # 更新下层网络
+                # 更新下层网络
                 if call_step_low:
                     learning_rate_a_low = FLAGS.learning_rate * (
                             1 - 0.9 * counter / FLAGS.max_episodes)  # 根据当前进行完的回合数量修改学习速率（减小）
@@ -156,6 +154,8 @@ def run_thread(agent, map_name, visualize, ind_thread):  # A3CAgent对象，地�
                     dir_high_buffer_2 = []
 
                 if is_done:  # 最终状态，后续处理
+                    print("Episode_counter: ", counter)
+                    print("obs.reward_isWin:", iswin)
                     GL.add_value_list(ind_thread, "victory_or_defeat", iswin)
                     GL.add_value_list(ind_thread, "reward_high_list",
                                       GL.get_value(ind_thread, "sum_high_reward") / num_steps)

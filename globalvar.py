@@ -33,7 +33,7 @@ def get_list():
     train_scv = [1, 2, 490, 3, 5]
     build_supply = [1, 3, 5, 91, 3, 5]
     build_barrack = [1, 3, 5, 42, 3, 5]
-    train_marine = [1, 2, 477, 3, 5]
+    train_marine = [1, 2, 477, 477, 477, 477, 477, 3, 5]
     # idle_worker = [6, 273]
     idle_worker = [6, 269]
     all_army_attack = [7, 13]
