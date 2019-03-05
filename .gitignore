@@ -1,3 +1,5 @@
 /snapshot/*
 /log/*
 /__pycache__/*
+/.idea/*
+/DataForAnalysis/*
