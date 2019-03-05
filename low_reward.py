@@ -42,7 +42,7 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type):
             if army_change > 0:
                 reward += 500
 
-            reward *= 10
+            # reward *= 10
             if reward > 1000:
                 reward = 1000
             if reward < -1000:
@@ -62,7 +62,7 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type):
             if killed_value_structures_change > 0:
                 reward += killed_value_structures_change
 
-            reward *= 10
+            # reward *= 10
             if reward > 1000:
                 reward = 1000
             if reward < -1000:
@@ -78,9 +78,11 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type):
         if macro_type == 0:
             print("Low_screen to self")
             dis = math.sqrt((coordinate[0] - ourside[0]) ** 2 + (coordinate[1] - ourside[1]) ** 2)
-            if dis <= 35:  # 0304, 25*1.4=35
+            if 2 < dis <= 45:  # 0304, 25*1.4=35
                 # reward = 500
-                reward += 100 - dis * 2
+                reward += 200 - dis * 2
+            elif dis <= 2:
+                reward = 0
             else:
                 reward += 100 - dis * 10
 
@@ -98,7 +100,7 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type):
             if killed_value_structures_change > 0:
                 reward += killed_value_structures_change
 
-            reward *= 10
+            # reward *= 10
             if reward > 1000:
                 reward = 1000
             if reward < -1000:
