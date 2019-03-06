@@ -30,10 +30,10 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
     # build_supply
     if dir_high == 1:
         dis = math.sqrt((coordinate[0] - supply[0]) ** 2 + (coordinate[1] - supply[1]) ** 2)
-        if 2 < dis <= 10:  # 0305
+        if 1 < dis <= 5:  # 0305
             # reward = 500
-            reward += 100 - dis * 10
-        elif dis <= 2:
+            reward += 100 - dis * 20
+        elif dis <= 1:
             reward = 0
         else:
             reward -= dis * 10
