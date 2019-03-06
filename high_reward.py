@@ -58,7 +58,7 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
     if worker_change > 0 and worker_count <= 22:
         reward += 10
     if worker_change > 0 and worker_count > 22:
-        reward -= 100
+        reward -= 400
 
     # 军队数量奖惩   yxy
     army_count = next_obs.observation["player"][5]
