@@ -8,7 +8,7 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
     ourside = [20, 25]
     enemyside = [44, 39]
     barrack = [20, 35]
-    supply = [35, 20]
+    supply = [40, 20]
     build_score_change = next_obs.observation["score_cumulative"][4] - obs.observation["score_cumulative"][4]
     killed_value_units_change = 10 * (
             next_obs.observation["score_cumulative"][5] - obs.observation["score_cumulative"][5])
@@ -54,7 +54,7 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
         dis = math.sqrt((coordinate[0] - barrack[0]) ** 2 + (coordinate[1] - barrack[1]) ** 2)
         if 2 < dis <= 10:  # 0305
             # reward = 500
-            reward += 200 - dis * 2
+            reward += 100 - dis * 10
         elif dis <= 2:
             reward = 0
         else:
