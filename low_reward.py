@@ -36,10 +36,10 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
         elif dis <= 1:
             reward = 0
         else:
-            reward -= dis * 10
+            reward -= dis * 100
 
         if build_score_change == 100:
-            reward += 500
+            reward += 300
 
         if reward > 1000:
             reward = 1000
