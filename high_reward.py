@@ -135,5 +135,5 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
     if reward <= -1.0:
         reward = -1.0
 
-    print("Thread%d high_reward is %.4f" % (ind_thread, reward))
+    # print("Thread%d high_reward is %.4f" % (ind_thread, reward))
     return reward
