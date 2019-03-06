@@ -12,7 +12,7 @@ def config_init():
     flags.DEFINE_float("discount", 0.99, "Discount rate for future rewards.")
     flags.DEFINE_integer("max_episodes", int(1000), "Total episodes for training.")  # 训练的最大回合episode数
     flags.DEFINE_integer("snapshot_step", int(50), "Step for snapshot.")  # 存储snapshot快照和numpy数据的iter
-    flags.DEFINE_list("quicksave_step_list", [10, 20, 30, 40, 70, 80], "Additional data-saving step list ")
+    flags.DEFINE_list("quicksave_step_list", [10, 20, 30, 40, 60, 70, 80, 90], "Additional data-saving step list ")
     flags.DEFINE_string("snapshot_path", "./snapshot/", "Path for snapshot.")
     flags.DEFINE_string("log_path", "./log/", "Path for log.")
     # 这里的Device每个机器运行的时候都不一样，依据配置设定
