@@ -2,7 +2,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 import globalvar as gl
-import numpy as np
 
 
 def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
