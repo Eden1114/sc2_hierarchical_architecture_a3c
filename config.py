@@ -6,8 +6,8 @@ def config_init():
     # 每次运行时设置：training，continuation，max_episodes，snapshot_step， render，parallel
     FLAGS = flags.FLAGS  # 定义超参数
     flags.DEFINE_bool("training", True, "Whether to train agents.")
-    flags.DEFINE_bool("continuation", False, "Continuously training.")
-    # flags.DEFINE_bool("continuation", True, "Continuously training.")
+    # flags.DEFINE_bool("continuation", False, "Continuously training.")
+    flags.DEFINE_bool("continuation", True, "Continuously training.")
     flags.DEFINE_float("learning_rate", 5e-4, "Learning rate for training.")
     flags.DEFINE_float("discount", 0.99, "Discount rate for future rewards.")
     flags.DEFINE_integer("max_episodes", int(1000), "Total episodes for training.")  # 训练的最大回合episode数

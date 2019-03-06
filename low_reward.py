@@ -4,12 +4,12 @@ import globalvar as GL
 
 def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, ind_thread):
     reward = 0
-    # 坐标x方向向下为正，y方向向右为正，左上角是[0, 0]
+    # 坐标x方向向右为正，y方向向下为正，左上角是[0, 0]
     base = [20, 25]  # minimap
     enemy = [44, 39]  # minimap
-    defense = [20, 40]  # minimap
-    barrack = [20, 35]  # screen
-    supply = [40, 20]  # screen
+    defense = [40, 25]  # minimap
+    barrack = [15, 35]  # screen
+    supply = [40, 25]  # screen
     build_score_change = next_obs.observation["score_cumulative"][4] - obs.observation["score_cumulative"][4]
     killed_value_units_change = 10 * (
             next_obs.observation["score_cumulative"][5] - obs.observation["score_cumulative"][5])
@@ -51,9 +51,9 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
     # build_barrack
     if dir_high == 2:
         dis = math.sqrt((coordinate[0] - barrack[0]) ** 2 + (coordinate[1] - barrack[1]) ** 2)
-        if 2 < dis <= 10:  # 0305
+        if 2 < dis <= 5:  # 0305
             # reward = 500
-            reward += 100 - dis * 10
+            reward += 100 - dis * 20
         elif dis <= 2:
             reward = 0
         else:

@@ -122,7 +122,8 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
         MAX_AGENT_STEPS = FLAGS.max_agent_steps  # 回合里agent的最大步数
     else:
         PARALLEL = 1
-        MAX_AGENT_STEPS = 1e5  # 回合里agent的最大步数
+        # MAX_AGENT_STEPS = 1e5  # 回合里agent的最大步数
+        MAX_AGENT_STEPS = FLAGS.max_agent_steps
     SNAPSHOT = FLAGS.snapshot_path + FLAGS.map + '/' + FLAGS.net
 
     with sc2_env.SC2Env(
