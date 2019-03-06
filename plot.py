@@ -100,4 +100,3 @@ plt.plot(np.arange(len(tmp3)), tmp3, 'y-')
 # plt.plot(np.arange(len(tmp41)), tmp38, 'g-')
 # plt.plot(np.arange(len(tmp3)) + 1006, tmp3, 'b-')
 plt.show()
-

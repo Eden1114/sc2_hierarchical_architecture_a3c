@@ -37,7 +37,7 @@ def run_loop(agents, env, max_steps, ind_thread):
                 if ind_last == -1 or ind_last == -99 or ind_last == 666:
                     # ind_last == -99 (表示宏动作里的微动作执行失败)
                     # ind_last == 666 (表示宏动作成功执行完毕）:
-                    dir_high = [agent.step_high(timestep) for agent, timestep in
+                    dir_high = [agent.step_high(timestep, ind_thread) for agent, timestep in
                                 zip(agents, timesteps)]  # dir_high是 要执行的宏动作id（从0开始）
                     GL.set_value(ind_thread, "dir_high", dir_high[0])
                     GL.set_value(ind_thread, "ind_micro", 0)

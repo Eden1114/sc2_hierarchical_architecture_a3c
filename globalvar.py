@@ -55,6 +55,7 @@ def get_list():
                     5: all_army_attack}
     return list_actions, len(list_actions)
 
+
 def set_episode_counter(counter):
     global episode_counter
     episode_counter = counter

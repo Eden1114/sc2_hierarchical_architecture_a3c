@@ -110,15 +110,15 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
     #     reward += total_value_units_change
 
     # kill units score
-    killed_value_units_change = 10 * (
-                next_obs.observation["score_cumulative"][5] - obs.observation["score_cumulative"][5])
-    if killed_value_units_change > 0:
-        reward += killed_value_units_change
+    killed_score_units_change = 10 * (
+            next_obs.observation["score_cumulative"][5] - obs.observation["score_cumulative"][5])
+    if killed_score_units_change > 0:
+        reward += killed_score_units_change
     # kill structure score
-    killed_value_structures_change = 10 * (
-                next_obs.observation["score_cumulative"][6] - obs.observation["score_cumulative"][6])
-    if killed_value_structures_change > 0:
-        reward += killed_value_structures_change
+    killed_score_structures_change = 10 * (
+            next_obs.observation["score_cumulative"][6] - obs.observation["score_cumulative"][6])
+    if killed_score_structures_change > 0:
+        reward += killed_score_structures_change
 
     # 生存时间与胜利条件判断
     if step > 1000:
@@ -135,5 +135,5 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
     if reward <= -1.0:
         reward = -1.0
 
-    # print("Thread%d high_reward is %.4f" % (ind_thread, reward))
+    print("Thread%d high_reward is %.4f" % (ind_thread, reward))
     return reward

@@ -17,6 +17,8 @@ import utils as U
 
 # DHN add:
 _, num_macro_action = GL.get_list()
+
+
 # 在main.py中调用build_model和initialize，按需调用update_low和high，step_low和high由update调用
 
 class A3CAgent(object):
@@ -39,8 +41,10 @@ class A3CAgent(object):
         self.msize = msize
         self.ssize = ssize
         self.isize = len(actions.FUNCTIONS)
-        self.info_plus_size_high = 9    # 当前step，矿物，闲置农民，剩余人口，农民数量，军队数量，房子数量，兵营数量，击杀奖励
-        self.info_plus_size_low = 4  # 当前step，房子数量，兵营数量，击杀奖励
+        self.info_plus_size_high = 10
+        # 当前step，矿物，闲置农民，剩余人口，农民数量，军队数量，房子数量，兵营数量，击杀单位奖励，击杀建筑奖励
+        self.info_plus_size_low = 5
+        # 当前step，房子数量，兵营数量，击杀单位奖励，击杀建筑奖励
 
     def setup(self, sess, summary_writer):
         self.sess = sess
@@ -65,7 +69,8 @@ class A3CAgent(object):
             self.minimap = tf.placeholder(tf.float32, [None, U.minimap_channel(), self.msize, self.msize],
                                           name='minimap')
             self.screen = tf.placeholder(tf.float32, [None, U.screen_channel(), self.ssize, self.ssize], name='screen')
-            self.info_high = tf.placeholder(tf.float32, [None, self.isize + self.info_plus_size], name='info_high')
+            self.info_high = tf.placeholder(tf.float32, [None, self.isize + self.info_plus_size_high], name='info_high')
+            self.info_low = tf.placeholder(tf.float32, [None, self.isize + self.info_plus_size_low], name='info_low')
             self.dir_high_usedToFeedLowNet = tf.placeholder(tf.float32, [1, 1], name='dir_high_usedToFeedLowNet')
             self.act_id = tf.placeholder(tf.float32, [1, 1], name='act_id')
 
@@ -73,11 +78,11 @@ class A3CAgent(object):
             # DHN add:
             self.dir_high, self.value_high, self.a_params_high, self.c_params_high = build_high_net(self.minimap,
                                                                                                     self.screen,
-                                                                                                    self.info,
+                                                                                                    self.info_high,
                                                                                                     num_macro_action)
             self.spatial_action_low, self.value_low, self.a_params_low, self.c_params_low = build_low_net(self.minimap,
                                                                                                           self.screen,
-                                                                                                          self.info,
+                                                                                                          self.info_low,
                                                                                                           self.dir_high_usedToFeedLowNet,
                                                                                                           self.act_id)
 
@@ -151,25 +156,34 @@ class A3CAgent(object):
             self.saver = tf.train.Saver(max_to_keep=100)  # 定义self.saver 为 tf的存储器Saver()，在save_model和load_model函数里使用
 
     # DHN add:
-    def step_high(self, obs):  # obs就是环境传入的timestep
+    def step_high(self, obs, ind_thread):  # obs就是环境传入的timestep
         minimap = np.array(obs.observation['feature_minimap'],
                            dtype=np.float32)  # 以下4行将minimap和screen的特征做一定处理后分别保存在minimap和screen变量中
         minimap = np.expand_dims(U.preprocess_minimap(minimap), axis=0)  # 这四行具体语法暂未研究
         screen = np.array(obs.observation['feature_screen'], dtype=np.float32)
         screen = np.expand_dims(U.preprocess_screen(screen), axis=0)
-        # TODO: only use available actions
         info = np.zeros([1, self.isize], dtype=np.float32)  # self.isize值是动作函数的数量
         info[0, obs.observation['available_actions']] = 1  # info存储可执行的动作。
-        # 矿物，闲置农民，剩余人口，农民数量，军队数量，房子数量，兵营数量，当前step，击杀奖励
-        info_plus = np.zeros([1, self.info_plus_size], dtype=np.float32)
-        info_plus[0] = obs.observation.player.minerals, obs.observation['player'][5], obs.observation['player'][6], \
-                       obs.observation['player'][4]
+        # info_plus_high: 当前step，矿物，闲置农民，剩余人口，农民数量，军队数量，房子数量，兵营数量，击杀奖励
+        step_count = GL.get_value(ind_thread, "num_steps")
+        minerals = obs.observation.player.minerals
+        idle_worker = obs.observation.player.idle_worker_count
+        food_remain = obs.observation["player"][4] - obs.observation["player"][3]
+        worker_count = obs.observation["player"][6]
+        army_count = obs.observation["player"][5]
+        supply_num = GL.get_value(ind_thread, "supply_num")
+        barrack_num = GL.get_value(ind_thread, "barrack_num")
+        killed_unit_score = obs.observation["score_cumulative"][5]
+        killed_structure_score = obs.observation["score_cumulative"][6]
+        info_plus_high = np.zeros([1, self.info_plus_size_high], dtype=np.float32)
+        info_plus_high[0] = step_count, minerals, idle_worker, food_remain, worker_count, army_count, \
+                            supply_num, barrack_num, killed_unit_score, killed_structure_score
         # info 现在的size 是 isize + info_plus_size
-        info = np.concatenate((info, info_plus), axis=1)
+        info_high = np.concatenate((info, info_plus_high), axis=1)
 
         feed = {self.minimap: minimap,
                 self.screen: screen,
-                self.info: info}
+                self.info_high: info_high}
         dir_high = self.sess.run(
             [self.dir_high],
             feed_dict=feed)
@@ -190,15 +204,17 @@ class A3CAgent(object):
         minimap = np.expand_dims(U.preprocess_minimap(minimap), axis=0)  # 这四行具体语法暂未研究
         screen = np.array(obs.observation['feature_screen'], dtype=np.float32)
         screen = np.expand_dims(U.preprocess_screen(screen), axis=0)
-        # TODO: only use available actions
         info = np.zeros([1, self.isize], dtype=np.float32)  # self.isize值是动作函数的数量
         info[0, obs.observation['available_actions']] = 1  # info存储可执行的动作。
-        # 矿物 军队数量 农民数量
-        info_plus = np.zeros([1, self.info_plus_size], dtype=np.float32)
-        info_plus[0] = obs.observation.player.minerals, obs.observation['player'][5], obs.observation['player'][6], \
-                       obs.observation['player'][4]
-        # info 现在的size 是 isize + info_plus_size
-        info = np.concatenate((info, info_plus), axis=1)
+        # info_plus_low: 当前step，房子数量，兵营数量，击杀奖励
+        step_count = GL.get_value(ind_thread, "num_steps")
+        supply_num = GL.get_value(ind_thread, "supply_num")
+        barrack_num = GL.get_value(ind_thread, "barrack_num")
+        killed_unit_score = obs.observation["score_cumulative"][5]
+        killed_structure_score = obs.observation["score_cumulative"][6]
+        info_plus_low = np.zeros([1, self.info_plus_size_low], dtype=np.float32)
+        info_plus_low[0] = step_count, supply_num, barrack_num, killed_unit_score, killed_structure_score
+        info_low = np.concatenate((info, info_plus_low), axis=1)
         dir_high_usedToFeedLowNet = np.ones([1, 1], dtype=np.float32)
         dir_high_usedToFeedLowNet[0][0] = dir_high
         act_ID = np.ones([1, 1], dtype=np.float32)
@@ -206,7 +222,7 @@ class A3CAgent(object):
 
         feed = {self.minimap: minimap,
                 self.screen: screen,
-                self.info: info,
+                self.info_low: info_low,
                 self.dir_high_usedToFeedLowNet: dir_high_usedToFeedLowNet,
                 self.act_id: act_ID}
         spatial_action_low = self.sess.run(
@@ -242,11 +258,15 @@ class A3CAgent(object):
             screen = np.expand_dims(U.preprocess_screen(screen), axis=0)
             info = np.zeros([1, self.isize], dtype=np.float32)
             info[0, obs.observation['available_actions']] = 1
-            info_plus = np.zeros([1, self.info_plus_size], dtype=np.float32)
-            info_plus[0] = obs.observation.player.minerals, obs.observation['player'][5], obs.observation['player'][6], \
-                           obs.observation['player'][4]
-            # info 现在的size 是 isize + info_plus_size
-            info = np.concatenate((info, info_plus), axis=1)
+            # info_plus_low: 当前step，房子数量，兵营数量，击杀奖励
+            step_count = GL.get_value(ind_thread, "num_steps")
+            supply_num = GL.get_value(ind_thread, "supply_num")
+            barrack_num = GL.get_value(ind_thread, "barrack_num")
+            killed_unit_score = obs.observation["score_cumulative"][5]
+            killed_structure_score = obs.observation["score_cumulative"][6]
+            info_plus_low = np.zeros([1, self.info_plus_size_low], dtype=np.float32)
+            info_plus_low[0] = step_count, supply_num, barrack_num, killed_unit_score, killed_structure_score
+            info_low = np.concatenate((info, info_plus_low), axis=1)
             dir_high_usedToFeedLowNet = np.ones([1, 1], dtype=np.float32)
             dir_high_usedToFeedLowNet[0][0] = dhs[0]
             act_id = np.ones([1, 1], dtype=np.float32)
@@ -257,7 +277,7 @@ class A3CAgent(object):
 
             feed = {self.minimap: minimap,
                     self.screen: screen,
-                    self.info: info,
+                    self.info_low: info_low,
                     self.dir_high_usedToFeedLowNet: dir_high_usedToFeedLowNet,
                     self.act_id: act_id,
                     }
@@ -287,14 +307,19 @@ class A3CAgent(object):
             screen = np.expand_dims(U.preprocess_screen(screen), axis=0)
             info = np.zeros([1, self.isize], dtype=np.float32)
             info[0, obs.observation['available_actions']] = 1
-            info_plus = np.zeros([1, self.info_plus_size], dtype=np.float32)
-            info_plus[0] = obs.observation.player.minerals, obs.observation['player'][5], obs.observation['player'][6], \
-                           obs.observation['player'][4]
-            # info 现在的size 是 isize + info_plus_size
-            info = np.concatenate((info, info_plus), axis=1)
+            # info_plus_low: 当前step，房子数量，兵营数量，击杀奖励
+            step_count = GL.get_value(ind_thread, "num_steps")
+            supply_num = GL.get_value(ind_thread, "supply_num")
+            barrack_num = GL.get_value(ind_thread, "barrack_num")
+            killed_unit_score = obs.observation["score_cumulative"][5]
+            killed_structure_score = obs.observation["score_cumulative"][6]
+            info_plus_low = np.zeros([1, self.info_plus_size_low], dtype=np.float32)
+            info_plus_low[0] = step_count, supply_num, barrack_num, killed_unit_score, killed_structure_score
+            info_low = np.concatenate((info, info_plus_low), axis=1)
+
             minimaps.append(minimap)
             screens.append(screen)
-            infos.append(info)
+            infos.append(info_low)
             dir_high_usedToFeedLowNet = np.ones([1, 1], dtype=np.float32)
             dir_high_usedToFeedLowNet[0][0] = dhs[i]
             act_ID = np.ones([1, 1], dtype=np.float32)
@@ -309,8 +334,8 @@ class A3CAgent(object):
             GL.add_value_list(ind_thread, "low_reward_of_episode", reward)
             act_id = action.function  # Agent在这一步中选择动作的id序号
             act_args = action.arguments
-            value_target[i] = reward + disc * value_target[
-                i - 1]  # 可参考莫烦Q_Learning教程中对Gamma的意义理解的那张图（有3个眼镜那张），得到回合中每个状态的价值V_S
+            value_target[i] = reward + disc * value_target[i - 1]
+            # 可参考莫烦Q_Learning教程中对Gamma的意义理解的那张图（有3个眼镜那张），得到回合中每个状态的价值V_S
             # 这里没像莫烦一样再次reverse value 似乎是因为其他参数（如minimap、screen、info等）也都是最后往前反序排列的。见181-182行
             args = actions.FUNCTIONS[act_id].args
             for arg, act_arg in zip(args, act_args):
@@ -327,7 +352,7 @@ class A3CAgent(object):
         # Train
         feed = {self.minimap: minimaps,
                 self.screen: screens,
-                self.info: infos,
+                self.info_low: infos,
                 self.dir_high_usedToFeedLowNet: dir_high_usedToFeedLowNet,
                 self.act_id: act_ID,
                 self.value_target_low: value_target,
@@ -356,13 +381,24 @@ class A3CAgent(object):
             screen = np.expand_dims(U.preprocess_screen(screen), axis=0)
             info = np.zeros([1, self.isize], dtype=np.float32)
             info[0, obs.observation['available_actions']] = 1
-            info_plus = np.zeros([1, self.info_plus_size], dtype=np.float32)
-            info_plus[0] = obs.observation.player.minerals, obs.observation['player'][5], obs.observation['player'][6], \
-                           obs.observation['player'][4]
-            info = np.concatenate((info, info_plus), axis=1)
+            # info_plus_high: 当前step，矿物，闲置农民，剩余人口，农民数量，军队数量，房子数量，兵营数量，击杀奖励
+            step_count = GL.get_value(ind_thread, "num_steps")
+            minerals = obs.observation.player.minerals
+            idle_worker = obs.observation.player.idle_worker_count
+            food_remain = obs.observation["player"][4] - obs.observation["player"][3]
+            worker_count = obs.observation["player"][6]
+            army_count = obs.observation["player"][5]
+            supply_num = GL.get_value(ind_thread, "supply_num")
+            barrack_num = GL.get_value(ind_thread, "barrack_num")
+            killed_unit_score = obs.observation["score_cumulative"][5]
+            killed_structure_score = obs.observation["score_cumulative"][6]
+            info_plus_high = np.zeros([1, self.info_plus_size_high], dtype=np.float32)
+            info_plus_high[0] = step_count, minerals, idle_worker, food_remain, worker_count, army_count, \
+                                supply_num, barrack_num, killed_unit_score, killed_structure_score
+            info_high = np.concatenate((info, info_plus_high), axis=1)
             feed = {self.minimap: minimap,
                     self.screen: screen,
-                    self.info: info}
+                    self.info_high: info_high}
             R = self.sess.run(self.value_high, feed_dict=feed)[0]
         # Compute targets and masks
         minimaps = []
@@ -384,20 +420,32 @@ class A3CAgent(object):
             screen = np.expand_dims(U.preprocess_screen(screen), axis=0)
             info = np.zeros([1, self.isize], dtype=np.float32)
             info[0, obs.observation['available_actions']] = 1
-            info_plus = np.zeros([1, self.info_plus_size], dtype=np.float32)
-            info_plus[0] = obs.observation.player.minerals, obs.observation['player'][5], obs.observation['player'][6], \
-                           obs.observation['player'][4]
-            info = np.concatenate((info, info_plus), axis=1)
+            # info_plus_high: 当前step，矿物，闲置农民，剩余人口，农民数量，军队数量，房子数量，兵营数量，击杀奖励
+            step_count = GL.get_value(ind_thread, "num_steps")
+            minerals = obs.observation.player.minerals
+            idle_worker = obs.observation.player.idle_worker_count
+            food_remain = obs.observation["player"][4] - obs.observation["player"][3]
+            worker_count = obs.observation["player"][6]
+            army_count = obs.observation["player"][5]
+            supply_num = GL.get_value(ind_thread, "supply_num")
+            barrack_num = GL.get_value(ind_thread, "barrack_num")
+            killed_unit_score = obs.observation["score_cumulative"][5]
+            killed_structure_score = obs.observation["score_cumulative"][6]
+            info_plus_high = np.zeros([1, self.info_plus_size_high], dtype=np.float32)
+            info_plus_high[0] = step_count, minerals, idle_worker, food_remain, worker_count, army_count, \
+                                supply_num, barrack_num, killed_unit_score, killed_structure_score
+            info_high = np.concatenate((info, info_plus_high), axis=1)
+
             minimaps.append(minimap)
             screens.append(screen)
-            infos.append(info)
+            infos.append(info_high)
             reward = high_reward(ind_thread, next_obs, obs, action, micro_isdone[i])  # 翔森设计的high reward
             sum_high_reward += reward
             GL.add_value_list(ind_thread, "high_reward_of_episode", reward)
             act_id = action.function  # Agent在这一步中选择动作的id序号
             act_args = action.arguments
-            value_target[i] = reward + disc * value_target[
-                i - 1]  # 可参考莫烦Q_Learning教程中对Gamma的意义理解的那张图（有3个眼镜那张），得到回合中每个状态的价值V_S
+            value_target[i] = reward + disc * value_target[i - 1]
+            # 可参考莫烦Q_Learning教程中对Gamma的意义理解的那张图（有3个眼镜那张），得到回合中每个状态的价值V_S
             # 这里没像莫烦一样再次reverse value 似乎是因为其他参数（如minimap、screen、info等）也都是最后往前反序排列的。见181-182行
             args = actions.FUNCTIONS[act_id].args
             for arg, act_arg in zip(args, act_args):
@@ -413,7 +461,7 @@ class A3CAgent(object):
         # Train
         feed = {self.minimap: minimaps,
                 self.screen: screens,
-                self.info: infos,
+                self.info_high: infos,
                 self.value_target_high: value_target,
                 self.dir_high_selected: dir_high_selected,
                 self.learning_rate_a_high: lr_a,
