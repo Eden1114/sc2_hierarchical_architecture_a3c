@@ -85,8 +85,7 @@ def build_high_net(minimap, screen, info, num_macro_action):
         tf.GraphKeys.TRAINABLE_VARIABLES, scope='actor_high')
     c_params_high = tf.get_collection(
         tf.GraphKeys.TRAINABLE_VARIABLES, scope='critic_high')
-    print('a_params_high============', a_params_high)
-    print('c_params_high============', c_params_high)
+    print('build_net_high')
     return dir_high, value_high, a_params_high, c_params_high
 
 
@@ -179,6 +178,5 @@ def build_low_net(minimap, screen, info, dir_high, act_id):
         tf.GraphKeys.TRAINABLE_VARIABLES, scope='actor_low')
     c_params_low = tf.get_collection(
         tf.GraphKeys.TRAINABLE_VARIABLES, scope='critic_low')
-    print('a_params_low============', a_params_low)
-    print('c_params_low============', c_params_low)
+    print('build_net_low')
     return dir_low, value_low, a_params_low, c_params_low
