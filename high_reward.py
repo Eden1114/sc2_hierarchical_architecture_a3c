@@ -94,15 +94,13 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
 
     if step >= 300 and supply_num == 0:
         reward -= 500
-
     if step >= 500 and barrack_num == 0:
         reward -= 400
-
     if step >= 50 and obs.observation.player.food_workers <= 12:
-        reward -= 10
+        reward -= 100
 
     if build_score_change > 0:
-        reward += build_score_change
+        reward += 3 * build_score_change
 
     # # build units score  重复了，先不用
     # total_value_units_change = next_obs.observation["score_cumulative"][3] - obs.observation["score_cumulative"][3]
