@@ -18,7 +18,7 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
     worker_change = next_obs.observation["player"][6] - obs.observation["player"][6]  # 农民变化
     food_remain = next_obs.observation["player"][4] - next_obs.observation["player"][3]  # 剩余人口
 
-    step = gl.get_value(ind_thread, "num_steps")  # 当前的步数，是UPDATE_GLOBAL_ITER的倍数，这里是50的倍数。1秒2.8步，50步约为18s
+    step = gl.get_value(ind_thread, "num_steps")  # 当前的步数，1秒2.8步，50步约为18s
     # 190125改写各项系数，yxy
 
     # 动作执行成功或失败：micro_is_done出现-1的情况，就说明宏动作失败了（出现微动作id不在available_action_list里的情况）
@@ -88,9 +88,9 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
     if build_score_change == -150:
         barrack_num -= 1
         gl.set_value(ind_thread, "barrack_num", barrack_num)
-    # 兵营编号
-    if build_score_change == 150 and barrack_num > 0:
-        gl.add_value_list(ind_thread, "barrack_location", [0, 0])  # 暂时用"(x，y)"代替坐标
+    # # 兵营编号----在run_thread存储
+    # if build_score_change == 150 and barrack_num > 0:
+    #     gl.add_value_list(ind_thread, "barrack_location", [0, 0])  # 暂时用"(x，y)"代替坐标
 
     if step >= 300 and supply_num == 0:
         reward -= 500
