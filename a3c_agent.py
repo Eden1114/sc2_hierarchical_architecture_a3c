@@ -34,13 +34,13 @@ class A3CAgent(object):
         self.training = training
         self.summary_low = []
         self.summary_high = []
-
         # Minimap size, screen size and info size
         assert msize == ssize
         self.msize = msize
         self.ssize = ssize
         self.isize = len(actions.FUNCTIONS)
-        self.info_plus_size = 4
+        self.info_plus_size_high = 9    # 当前step，矿物，闲置农民，剩余人口，农民数量，军队数量，房子数量，兵营数量，击杀奖励
+        self.info_plus_size_low = 4  # 当前step，房子数量，兵营数量，击杀奖励
 
     def setup(self, sess, summary_writer):
         self.sess = sess
@@ -65,7 +65,7 @@ class A3CAgent(object):
             self.minimap = tf.placeholder(tf.float32, [None, U.minimap_channel(), self.msize, self.msize],
                                           name='minimap')
             self.screen = tf.placeholder(tf.float32, [None, U.screen_channel(), self.ssize, self.ssize], name='screen')
-            self.info = tf.placeholder(tf.float32, [None, self.isize + self.info_plus_size], name='info')
+            self.info_high = tf.placeholder(tf.float32, [None, self.isize + self.info_plus_size], name='info_high')
             self.dir_high_usedToFeedLowNet = tf.placeholder(tf.float32, [1, 1], name='dir_high_usedToFeedLowNet')
             self.act_id = tf.placeholder(tf.float32, [1, 1], name='act_id')
 
@@ -160,7 +160,7 @@ class A3CAgent(object):
         # TODO: only use available actions
         info = np.zeros([1, self.isize], dtype=np.float32)  # self.isize值是动作函数的数量
         info[0, obs.observation['available_actions']] = 1  # info存储可执行的动作。
-        # 矿物 军队数量 农民数量
+        # 矿物，闲置农民，剩余人口，农民数量，军队数量，房子数量，兵营数量，当前step，击杀奖励
         info_plus = np.zeros([1, self.info_plus_size], dtype=np.float32)
         info_plus[0] = obs.observation.player.minerals, obs.observation['player'][5], obs.observation['player'][6], \
                        obs.observation['player'][4]
