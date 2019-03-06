@@ -66,7 +66,7 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
     if army_count > 0:
         reward += 30 * army_count
     if step >= 500 and army_count == 0:
-        reward -= 100
+        reward -= 300
     if army_change > 0:
         reward += 50
 
@@ -94,19 +94,16 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
         gl.add_value_list(ind_thread, "barrack_location", [0, 0])  # 暂时用"(x，y)"代替坐标
 
     if step >= 300 and supply_num == 0:
-        reward -= 300
+        reward -= 500
 
     if step >= 500 and barrack_num == 0:
-        reward -= 300
+        reward -= 400
 
     if step >= 50 and obs.observation.player.food_workers <= 12:
         reward -= 10
 
     if build_score_change > 0:
-        if build_score_change == 150:
-            reward += 100
-        elif build_score_change == 100:
-            reward += 50
+        reward += build_score_change
 
     # # build units score  重复了，先不用
     # total_value_units_change = next_obs.observation["score_cumulative"][3] - obs.observation["score_cumulative"][3]
