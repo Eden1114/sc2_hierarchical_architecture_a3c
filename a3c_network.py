@@ -31,7 +31,7 @@ def build_high_net(minimap, screen, info, num_macro_action):
                                  stride=1,
                                  scope='sconv2_high')
         info_fc_a = layers.fully_connected(layers.flatten(info),
-                                           num_outputs=32,
+                                           num_outputs=256,
                                            activation_fn=tf.tanh,
                                            scope='info_fc_high')
         feat_fc_a = tf.concat(
@@ -67,7 +67,7 @@ def build_high_net(minimap, screen, info, num_macro_action):
                                  stride=1,
                                  scope='sconv2_high')
         info_fc_c = layers.fully_connected(layers.flatten(info),
-                                           num_outputs=32,
+                                           num_outputs=256,
                                            activation_fn=tf.tanh,
                                            scope='info_fc_high')
         feat_fc_c = tf.concat(
@@ -123,7 +123,7 @@ def build_low_net(minimap, screen, info, dir_high, act_id):
         high_net_output = tf.concat([dir_high, act_id], axis=1)
         info_a = tf.concat([layers.flatten(info), high_net_output], axis=1)
         info_fc_a = layers.fully_connected(info_a,
-                                           num_outputs=32,
+                                           num_outputs=256,
                                            activation_fn=tf.tanh,
                                            scope='info_fc_low')
         feat_fc_a = tf.concat(
@@ -161,7 +161,7 @@ def build_low_net(minimap, screen, info, dir_high, act_id):
         high_net_output = tf.concat([dir_high, act_id], axis=1)
         info_c = tf.concat([layers.flatten(info), high_net_output], axis=1)
         info_fc_c = layers.fully_connected(layers.flatten(info_c),
-                                           num_outputs=32,
+                                           num_outputs=256,
                                            activation_fn=tf.tanh,
                                            scope='info_fc_low')
         feat_fc_c = tf.concat(
