@@ -11,7 +11,8 @@ def config_init():
     flags.DEFINE_float("learning_rate", 5e-4, "Learning rate for training.")
     flags.DEFINE_float("discount", 0.99, "Discount rate for future rewards.")
     flags.DEFINE_integer("max_episodes", int(1000), "Total episodes for training.")  # 训练的最大回合episode数
-    flags.DEFINE_integer("snapshot_step", int(50), "Step for snapshot.")
+    flags.DEFINE_integer("snapshot_step", int(50), "Step for snapshot.")    # 存储snapshot快照和numpy数据的iter
+    flags.DEFINE_list("quicksave_step_list", [10, 20, 30, 40, 70, 80], "Additional data-saving step list ")
     flags.DEFINE_string("snapshot_path", "./snapshot/", "Path for snapshot.")
     flags.DEFINE_string("log_path", "./log/", "Path for log.")
     # 这里的Device每个机器运行的时候都不一样，依据配置设定
@@ -31,7 +32,8 @@ def config_init():
                       "Agent 2's race.")
     flags.DEFINE_enum("difficulty", "very_easy", sc2_env.Difficulty._member_names_,  # pylint: disable=protected-access
                       "If agent2 is a built-in Bot, it's strength.")
-    flags.DEFINE_integer("max_agent_steps", 5000, "Total agent steps.")  # 这里的step指的是回合episode里的那个step
+    flags.DEFINE_integer("max_agent_steps", 4000, "Total agent steps.")  # 这里的step指的是回合episode里的那个step
+    # 3000step = 18min游戏时间??   5000 = 21min??
     flags.DEFINE_bool("profile", False, "Whether to turn on code profiling.")
     flags.DEFINE_bool("trace", False, "Whether to trace the code execution.")
     # 线程数的最佳值是4 @ 1080ti单卡 + i7 6700

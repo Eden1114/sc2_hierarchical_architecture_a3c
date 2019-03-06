@@ -14,7 +14,7 @@ list_actions, _ = GL.get_list()
 
 # agents是列表，里面有一个agent（A3CAgent对象），env是SC2Env对象经过处理后的变量，max_frames是回合内最多进行的step数
 # 190305：将main的run_thread与原有的run_loop放到同一个文件内。
-# run_thread.py是main与agent的衔接，run_thread负责执行thread，run_loop控制episode与step进程，控制agent和环境的交互
+# run_thread.py是main与agent的衔接，run_thread负责执行thread，run_loop控制episode与step进程，控制agent和环境的交互，控制数据保存
 def run_loop(agents, env, max_steps, ind_thread):
     start_time = time.time()
     try:
@@ -134,7 +134,7 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
         env = available_actions_printer.AvailableActionsPrinter(env)
 
         # Only for a single player!
-        counter = GL.get_episode_counter()    # global_episode_counter
+        counter = GL.get_episode_counter()  # global_episode_counter
         # 后缀1供下层网络更新时使用， 后缀2供上层网络更新时使用
         iswin = -99
         replay_buffer_1 = []
@@ -184,7 +184,7 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                     replay_buffer_2 = []
                     dir_high_buffer_2 = []
 
-                if is_done:  # 最终状态，后续处理
+                if is_done:  # 最终状态，后续处理，存储数据
                     print("Episode_counter: ", counter)
                     print("obs.reward_isWin:", iswin)
                     GL.add_value_list(ind_thread, "victory_or_defeat", iswin)
@@ -192,15 +192,26 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                                       GL.get_value(ind_thread, "sum_high_reward") / num_steps)
                     GL.add_value_list(ind_thread, "reward_low_list",
                                       GL.get_value(ind_thread, "sum_low_reward") / num_call_step_low)
-                    if counter % FLAGS.snapshot_step == 1:  # global_episode到规定回合数存储网络参数（tf.train.Saver().save(),见a3c_agent）
+                    # global_episode是FLAGS.snapshot_step的倍数+1，或指定回合数
+                    # 存单个episode的reward变化，存储网络参数（tf.train.Saver().save(),见a3c_agent），存全局numpy以备急停
+                    if (counter % FLAGS.snapshot_step == 1) or (counter in FLAGS.quicksave_step_list):
                         agent.save_model(SNAPSHOT, counter)
-                    if counter % 50 == 1:  # local_episode是50的倍数+1时，存一下单个episode的reward变化
                         for i in range(PARALLEL):
                             np.save(
-                                "./DataForAnalysis/low_reward_of_episode" + str(counter) + "parallel" + str(i) + ".npy",
+                                "./DataForAnalysis/low_reward_of_episode" + str(counter) + "thread" + str(i) + ".npy",
                                 GL.get_value(i, "low_reward_of_episode"))
-                            np.save("./DataForAnalysis/high_reward_of_episode" + str(counter) + "parallel" + str(
-                                i) + ".npy", GL.get_value(i, "high_reward_of_episode"))
+                            np.save(
+                                "./DataForAnalysis/high_reward_of_episode" + str(counter) + "thread" + str(i) + ".npy",
+                                GL.get_value(i, "high_reward_of_episode"))
+                            np.save(
+                                "./DataForAnalysis/low_reward_list_thread" + str(i) + "episode" + str(counter) + ".npy",
+                                GL.get_value(i, "reward_low_list"))
+                            np.save("./DataForAnalysis/high_reward_list_thread" + str(i) + "episode" + str(
+                                counter) + ".npy",
+                                    GL.get_value(i, "reward_high_list"))
+                            np.save("./DataForAnalysis/victory_or_defeat_thread" + str(i) + "episode" + str(
+                                counter) + ".npy",
+                                    GL.get_value(i, "victory_or_defeat"))
                     if counter >= FLAGS.max_episodes:  # 超过设定的最大训练回合数后，退出循环（等于线程结束）
                         break
 

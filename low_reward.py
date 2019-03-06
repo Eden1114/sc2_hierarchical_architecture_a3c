@@ -5,10 +5,11 @@ import globalvar as GL
 def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, ind_thread):
     reward = 0
     # 坐标x方向向下为正，y方向向右为正，左上角是[0, 0]
-    ourside = [20, 25]
-    enemyside = [44, 39]
-    barrack = [20, 35]
-    supply = [40, 20]
+    base = [20, 25]    # minimap
+    enemy = [44, 39]    # minimap
+    defense = [20, 40]    # minimap
+    barrack = [20, 35]    # screen
+    supply = [40, 20]    # screen
     build_score_change = next_obs.observation["score_cumulative"][4] - obs.observation["score_cumulative"][4]
     killed_value_units_change = 10 * (
             next_obs.observation["score_cumulative"][5] - obs.observation["score_cumulative"][5])
@@ -77,7 +78,7 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
         # 对己方操作
         if macro_type == 0:
             print("Low_minimap to self")
-            dis = math.sqrt((coordinate[0] - ourside[0]) ** 2 + (coordinate[1] - ourside[1]) ** 2)
+            dis = math.sqrt((coordinate[0] - base[0]) ** 2 + (coordinate[1] - base[1]) ** 2)
             if dis <= 35:  # 0304, 25*1.4=35
                 reward = 500
                 reward += 100 - dis * 2
@@ -106,13 +107,15 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
         # 对敌方操作
         if macro_type == 1:
             print("Low_minimap to enemy")
-            dis = math.sqrt((coordinate[0] - enemyside[0]) ** 2 + (coordinate[1] - enemyside[1]) ** 2)
-            reward += 100 - dis * 10
+            dis_atk = math.sqrt((coordinate[0] - enemy[0]) ** 2 + (coordinate[1] - enemy[1]) ** 2)
+            dis_def = math.sqrt((coordinate[0] - defense[0]) ** 2 + (coordinate[1] - defense[1]) ** 2)
+            dis = min(dis_atk, dis_def)
+            reward += 200 - dis * 10
 
             if killed_value_units_change > 0:
-                reward += killed_value_units_change
+                reward += 10 * killed_value_units_change
             if killed_value_structures_change > 0:
-                reward += killed_value_structures_change
+                reward += 10 * killed_value_structures_change
 
             # reward *= 10
             if reward > 1000:
@@ -129,7 +132,7 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
         # 对己方操作
         if macro_type == 0:
             # print("Low_screen to self")
-            dis = math.sqrt((coordinate[0] - ourside[0]) ** 2 + (coordinate[1] - ourside[1]) ** 2)
+            dis = math.sqrt((coordinate[0] - base[0]) ** 2 + (coordinate[1] - base[1]) ** 2)
             if 2 < dis <= 20:  # 0305
                 # reward = 500
                 reward += 200 - dis * 2

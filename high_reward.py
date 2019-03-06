@@ -81,15 +81,6 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
     if build_score_change == -100:
         supply_num -= 1
         gl.set_value(ind_thread, "supply_num", supply_num)
-    # print("thread%d supply_num is %d" % (ind_thread, supply_num))
-
-    # #补给站编号（补给站建造起来方便，调试时用补给站代替兵营调试）
-    # if build_score_change == 100 and supplydepot_number != 0:
-    #     supplydepot_x= "supplydepot_" + str(supplydepot_number)
-    #     gl.set_value(supplydepot_x, "(x,y)")
-    #     location =  gl.get_value(supplydepot_x, "(x,y)")
-    #     print("####################",supplydepot_x, "is",location,"#####################")
-
     # 兵营数目
     barrack_num = gl.get_value(ind_thread, "barrack_num")
     if build_score_change == 150:
@@ -98,8 +89,6 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
     if build_score_change == -150:
         barrack_num -= 1
         gl.set_value(ind_thread, "barrack_num", barrack_num)
-        # print("thread%d barrack_num is %d" % (ind_thread, barrack_num))
-
     # 兵营编号
     if build_score_change == 150 and barrack_num > 0:
         gl.add_value_list(ind_thread, "barrack_location", [0, 0])  # 暂时用"(x，y)"代替坐标
@@ -118,7 +107,6 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
             reward += 100
         elif build_score_change == 100:
             reward += 50
-            # print("buile_score_change is %d"%build_score_change)
 
     # # build units score  重复了，先不用
     # total_value_units_change = next_obs.observation["score_cumulative"][3] - obs.observation["score_cumulative"][3]
@@ -142,7 +130,7 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
         reward += (step_r / 10)
     if step >= 3000 and obs.observation.player.food_workers >= 12 and obs.observation.score_cumulative.total_value_structures >= 400:
         # 存活18分钟，人口大于12，基地没被打爆
-        reward = 1000
+        reward += 500
 
     # 归一化到正负1之间
     reward = float(reward / 1000)
