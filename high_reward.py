@@ -58,7 +58,7 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
     if worker_change > 0 and worker_count <= 22:
         reward += 10
     if worker_change > 0 and worker_count > 22:
-        reward -= 100
+        reward -= 400
 
     # 军队数量奖惩   yxy
     army_count = next_obs.observation["player"][5]
@@ -94,15 +94,13 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
 
     if step >= 300 and supply_num == 0:
         reward -= 500
-
     if step >= 500 and barrack_num == 0:
         reward -= 400
-
     if step >= 50 and obs.observation.player.food_workers <= 12:
-        reward -= 10
+        reward -= 100
 
     if build_score_change > 0:
-        reward += build_score_change
+        reward += 3 * build_score_change
 
     # # build units score  重复了，先不用
     # total_value_units_change = next_obs.observation["score_cumulative"][3] - obs.observation["score_cumulative"][3]
@@ -110,15 +108,15 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
     #     reward += total_value_units_change
 
     # kill units score
-    killed_value_units_change = 10 * (
-                next_obs.observation["score_cumulative"][5] - obs.observation["score_cumulative"][5])
-    if killed_value_units_change > 0:
-        reward += killed_value_units_change
+    killed_score_units_change = 10 * (
+            next_obs.observation["score_cumulative"][5] - obs.observation["score_cumulative"][5])
+    if killed_score_units_change > 0:
+        reward += killed_score_units_change
     # kill structure score
-    killed_value_structures_change = 10 * (
-                next_obs.observation["score_cumulative"][6] - obs.observation["score_cumulative"][6])
-    if killed_value_structures_change > 0:
-        reward += killed_value_structures_change
+    killed_score_structures_change = 10 * (
+            next_obs.observation["score_cumulative"][6] - obs.observation["score_cumulative"][6])
+    if killed_score_structures_change > 0:
+        reward += killed_score_structures_change
 
     # 生存时间与胜利条件判断
     if step > 1000:

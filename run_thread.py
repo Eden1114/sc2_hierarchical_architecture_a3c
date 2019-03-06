@@ -122,7 +122,8 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
         MAX_AGENT_STEPS = FLAGS.max_agent_steps  # 回合里agent的最大步数
     else:
         PARALLEL = 1
-        MAX_AGENT_STEPS = 1e5  # 回合里agent的最大步数
+        # MAX_AGENT_STEPS = 1e5  # 回合里agent的最大步数
+        MAX_AGENT_STEPS = FLAGS.max_agent_steps
     SNAPSHOT = FLAGS.snapshot_path + FLAGS.map + '/' + FLAGS.net
 
     with sc2_env.SC2Env(
@@ -206,11 +207,11 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                             np.save(
                                 "./DataForAnalysis/low_reward_list_thread" + str(i) + "episode" + str(counter) + ".npy",
                                 GL.get_value(i, "reward_low_list"))
-                            np.save(
-                                "./DataForAnalysis/high_reward_list_thread" + str(i) + "episode" + str(counter) + ".npy",
+                            np.save("./DataForAnalysis/high_reward_list_thread" + str(i) + "episode" + str(
+                                counter) + ".npy",
                                     GL.get_value(i, "reward_high_list"))
-                            np.save(
-                                "./DataForAnalysis/victory_or_defeat_thread" + str(i) + "episode" + str(counter) + ".npy",
+                            np.save("./DataForAnalysis/victory_or_defeat_thread" + str(i) + "episode" + str(
+                                counter) + ".npy",
                                     GL.get_value(i, "victory_or_defeat"))
                     if counter >= FLAGS.max_episodes:  # 超过设定的最大训练回合数后，退出循环（等于线程结束）
                         break
