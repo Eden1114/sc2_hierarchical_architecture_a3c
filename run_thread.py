@@ -12,10 +12,9 @@ import globalvar as GL
 list_actions, _ = GL.get_list()
 
 
-# 该函数的作用是使agent和环境进行交互（根据环境选动作，有了动作后更新环境）
 # agents是列表，里面有一个agent（A3CAgent对象），env是SC2Env对象经过处理后的变量，max_frames是回合内最多进行的step数
 # 190305：将main的run_thread与原有的run_loop放到同一个文件内。
-# run_thread.py是main与agent的衔接，run_thread负责执行thread，run_loop控制episode与step进程
+# run_thread.py是main与agent的衔接，run_thread负责执行thread，run_loop控制episode与step进程，控制agent和环境的交互
 def run_loop(agents, env, max_steps, ind_thread):
     start_time = time.time()
     try:
