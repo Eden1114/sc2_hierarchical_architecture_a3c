@@ -13,9 +13,9 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
     barrack = [15, 35]  # screen
     supply = [40, 25]  # screen
     build_score_change = next_obs.observation["score_cumulative"][4] - obs.observation["score_cumulative"][4]
-    killed_value_units_change = 10 * (
+    killed_score_units_change = 10 * (
             next_obs.observation["score_cumulative"][5] - obs.observation["score_cumulative"][5])
-    killed_value_structures_change = 10 * (
+    killed_score_structures_change = 10 * (
             next_obs.observation["score_cumulative"][6] - obs.observation["score_cumulative"][6])
     army_change = next_obs.observation["player"][5] - obs.observation["player"][5]  # 军队变化
     dir_high = GL.get_value(ind_thread, "dir_high")
@@ -112,12 +112,11 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
             dis = min(dis_atk, dis_atk_2, dis_def, dis_def_base)
             reward += 200 - dis * 5
 
-            if killed_value_units_change > 0:
-                reward += 10 * killed_value_units_change
-            if killed_value_structures_change > 0:
-                reward += 10 * killed_value_structures_change
+            if killed_score_units_change > 0:
+                reward += 10 * killed_score_units_change
+            if killed_score_structures_change > 0:
+                reward += 10 * killed_score_structures_change
 
-            # reward *= 10
             if reward > 1000:
                 reward = 1000
             if reward < -1000:
