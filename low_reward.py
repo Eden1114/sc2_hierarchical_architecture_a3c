@@ -7,6 +7,7 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
     # 坐标x方向向右为正，y方向向下为正，左上角是[0, 0]
     base = [20, 25]  # minimap
     enemy = [44, 39]  # minimap
+    enemy_2 = [20, 39]  # minimap
     defense = [40, 25]  # minimap
     defense_base = [25, 25]  # minimap
     barrack = [15, 35]  # screen
@@ -105,9 +106,10 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
         # 对敌方操作
         if macro_type == 1:
             dis_atk = math.sqrt((coordinate[0] - enemy[0]) ** 2 + (coordinate[1] - enemy[1]) ** 2)
+            dis_atk_2 = math.sqrt((coordinate[0] - enemy_2[0]) ** 2 + (coordinate[1] - enemy_2[1]) ** 2)
             dis_def = math.sqrt((coordinate[0] - defense[0]) ** 2 + (coordinate[1] - defense[1]) ** 2)
             dis_def_base = math.sqrt((coordinate[0] - defense_base[0]) ** 2 + (coordinate[1] - defense_base[1]) ** 2)
-            dis = min(dis_atk, dis_def, dis_def_base)
+            dis = min(dis_atk, dis_atk_2, dis_def, dis_def_base)
             reward += 200 - dis * 10
 
             if killed_value_units_change > 0:
