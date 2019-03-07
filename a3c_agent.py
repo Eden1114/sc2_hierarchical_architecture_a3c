@@ -208,7 +208,6 @@ class A3CAgent(object):
         info[0, obs.observation['available_actions']] = 1  # info存储可执行的动作。
         # info_plus_low: 当前step，房子数量，兵营数量，击杀奖励
         step_count = GL.get_value(ind_thread, "num_steps")
-        print("step_low_steps: ", step_count)
         supply_num = GL.get_value(ind_thread, "supply_num")
         barrack_num = GL.get_value(ind_thread, "barrack_num")
         killed_unit_score = obs.observation["score_cumulative"][5]
@@ -310,7 +309,6 @@ class A3CAgent(object):
             info[0, obs.observation['available_actions']] = 1
             # info_plus_low: 当前step，房子数量，兵营数量，击杀奖励
             step_count = GL.get_value(ind_thread, "num_steps")
-            print("update_low_steps: ", step_count)
             supply_num = GL.get_value(ind_thread, "supply_num")
             barrack_num = GL.get_value(ind_thread, "barrack_num")
             killed_unit_score = obs.observation["score_cumulative"][5]
@@ -324,10 +322,8 @@ class A3CAgent(object):
             infos.append(info_low)
             dir_high_usedToFeedLowNet = np.ones([1, 1], dtype=np.float32)
             dir_high_usedToFeedLowNet[0][0] = dhs[i]
-            print("update_low_dir_high: ", dir_high_usedToFeedLowNet)
             act_ID = np.ones([1, 1], dtype=np.float32)
             act_ID[0][0] = GL.get_value(ind_thread, "act_id_micro")
-            print("update_low_act_ID: ", act_ID)
             # dir_highs.append(dir_high_usedToFeedLowNet)
             # act_ids.append(act_ID)
             coord = [0, 0]
@@ -426,7 +422,6 @@ class A3CAgent(object):
             info[0, obs.observation['available_actions']] = 1
             # info_plus_high: 当前step，矿物，闲置农民，剩余人口，农民数量，军队数量，房子数量，兵营数量，击杀奖励
             step_count = GL.get_value(ind_thread, "num_steps")
-            print("update_high_steps: ", step_count)
             minerals = obs.observation.player.minerals
             idle_worker = obs.observation.player.idle_worker_count
             food_remain = obs.observation["player"][4] - obs.observation["player"][3]

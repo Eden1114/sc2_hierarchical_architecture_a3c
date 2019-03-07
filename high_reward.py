@@ -45,7 +45,6 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
     # 闲置农民惩罚
     if idle_worker > 0:
         reward -= 20 * idle_worker
-        # print("idle_workers are :%d"%idle_worker)
 
     # 剩余人口奖惩
     if 0 < food_remain < 2:  # food_remain可能为负数
