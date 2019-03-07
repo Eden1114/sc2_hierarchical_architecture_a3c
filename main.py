@@ -90,9 +90,9 @@ def _main(unused_argv):
         print(stopwatch.sw)
     # 数据记录
     for i in range(PARALLEL):
-        np.save("./DataForAnalysis/low_reward_list_parallel" + str(i) + ".npy", GL.get_value(i, "reward_low_list"))
-        np.save("./DataForAnalysis/high_reward_list_parallel" + str(i) + ".npy", GL.get_value(i, "reward_high_list"))
-        np.save("./DataForAnalysis/victory_or_defeat_parallel" + str(i) + ".npy", GL.get_value(i, "victory_or_defeat"))
+        np.save("./DataForAnalysis/low_reward_list_thread" + str(i) + ".npy", GL.get_value(i, "reward_low_list"))
+        np.save("./DataForAnalysis/high_reward_list_thread" + str(i) + ".npy", GL.get_value(i, "reward_high_list"))
+        np.save("./DataForAnalysis/victory_or_defeat_thread" + str(i) + ".npy", GL.get_value(i, "victory_or_defeat"))
     print('Fin. ')
 
 
