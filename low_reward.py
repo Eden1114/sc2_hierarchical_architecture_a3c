@@ -110,7 +110,7 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
             dis_def = math.sqrt((coordinate[0] - defense[0]) ** 2 + (coordinate[1] - defense[1]) ** 2)
             dis_def_base = math.sqrt((coordinate[0] - defense_base[0]) ** 2 + (coordinate[1] - defense_base[1]) ** 2)
             dis = min(dis_atk, dis_atk_2, dis_def, dis_def_base)
-            reward += 200 - dis * 10
+            reward += 200 - dis * 5
 
             if killed_value_units_change > 0:
                 reward += 10 * killed_value_units_change
