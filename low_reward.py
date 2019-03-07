@@ -148,10 +148,10 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
             if army_change > 0:
                 reward += 500
 
-            if killed_value_units_change > 0:
-                reward += killed_value_units_change
-            if killed_value_structures_change > 0:
-                reward += killed_value_structures_change
+            if killed_score_units_change > 0:
+                reward += killed_score_units_change
+            if killed_score_structures_change > 0:
+                reward += killed_score_structures_change
 
             if reward > 1000:
                 reward = 1000

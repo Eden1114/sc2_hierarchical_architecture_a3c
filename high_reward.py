@@ -70,7 +70,6 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
 
     # 建造得分计算，补给站是100，兵营是150，指挥中心是400
     build_score_change = next_obs.observation["score_cumulative"][4] - obs.observation["score_cumulative"][4]
-
     # 补给站数目
     supply_num = gl.get_value(ind_thread, "supply_num")
     if build_score_change == 100:
@@ -87,9 +86,6 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
     if build_score_change == -150:
         barrack_num -= 1
         gl.set_value(ind_thread, "barrack_num", barrack_num)
-    # # 兵营编号----在run_thread存储
-    # if build_score_change == 150 and barrack_num > 0:
-    #     gl.add_value_list(ind_thread, "barrack_location", [0, 0])  # 暂时用"(x，y)"代替坐标
 
     if step >= 300 and supply_num == 0:
         reward -= 500
@@ -97,7 +93,6 @@ def high_reward(ind_thread, next_obs, obs, action, micro_isdone):
         reward -= 400
     if step >= 50 and obs.observation.player.food_workers <= 12:
         reward -= 100
-
     if build_score_change > 0:
         reward += 3 * build_score_change
 
