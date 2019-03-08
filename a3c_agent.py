@@ -474,8 +474,8 @@ class A3CAgent(object):
         GL.set_value(ind_thread, "micro_isdone", [])
 
     def save_model(self, path, count):
-        GL.set_saving(True)
-        self.saver.save(self.sess, path + '/model.pkl', count)
+        # GL.set_saving(True)
+        self.saver.save(self.sess, path + '/model.ckpt', count)
 
     def load_model(self, path):
         ckpt = tf.train.get_checkpoint_state(path)

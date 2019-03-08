@@ -54,8 +54,8 @@ def run_loop(agents, env, max_steps, ind_thread):
                     ind_todo = GL.get_value(ind_thread, "ind_micro")
 
                 dir_high = GL.get_value(ind_thread, "dir_high")
-                print("dir_high: ", dir_high)
-                print("ind_todo: ", ind_todo)
+                # print("dir_high: ", dir_high)
+                # print("ind_todo: ", ind_todo)
                 action, call_step_low, act_id, macro_type, coord_type = action_micro(ind_thread, dir_high,
                                                                                      ind_todo)
                 # 关键一步，调用了macro_action.action_micro计算出选择的action和其他参数。
@@ -214,7 +214,7 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                     # global_episode是FLAGS.snapshot_step的倍数+1，或指定回合数
                     # 存单个episode的reward变化，存储网络参数（tf.train.Saver().save(),见a3c_agent），存全局numpy以备急停
                     if (counter % FLAGS.snapshot_step == 1) or (counter in FLAGS.quicksave_step_list):
-                        # agent.save_model(SNAPSHOT, counter)
+                        agent.save_model(SNAPSHOT, counter)
                         for i in range(PARALLEL):
                             np.save(
                                 "./DataForAnalysis/low_reward_of_episode" + str(counter) + "thread" + str(i) + ".npy",

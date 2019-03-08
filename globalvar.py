@@ -5,7 +5,7 @@ def global_init(index):
     episode_counter = 0
     saving = False
 
-    for i in range(index):
+    for i in range(index+1):
         dict = {"num_steps": 0, "ind_micro": -9999, "act_id_micro": -9999, "dir_high": -9999,
                 "supply_num": -9999, "barrack_num": -9999, "barrack_location": [],
                 "micro_isdone": [],
@@ -13,7 +13,8 @@ def global_init(index):
                 "sum_high_reward": -9999, "sum_low_reward": -9999,
                 "high_reward_of_episode": [], "low_reward_of_episode": [],
                 "victory_or_defeat": [], "barrack_location_NotSure": [-99, -99],
-                "episode_score_list":[]}
+                "episode_score_list": [], "high_reward_decay": 0,
+                "low_reward_decay": 0}
         # micro_isdone 成功是1，失败是-1
         global_var_dict.append(dict)
 
@@ -28,6 +29,8 @@ def episode_init(ind_thread):
     set_value(ind_thread, "sum_low_reward", 0)
     set_value(ind_thread, "high_reward_of_episode", [])
     set_value(ind_thread, "low_reward_of_episode", [])
+    set_value(ind_thread, "high_reward_decay", 0)
+    set_value(ind_thread, "low_reward_decay", 0)
     set_saving(False)
 
 
