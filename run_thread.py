@@ -135,6 +135,7 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
         PARALLEL = FLAGS.parallel  # PARALLEL 指定开几个线程（几个游戏窗口在跑星际2）
         MAX_AGENT_STEPS = FLAGS.max_agent_steps
     SNAPSHOT = FLAGS.snapshot_path + FLAGS.map + '/' + FLAGS.net
+    ind_thread_all = PARALLEL    # 第n+1个线程标号用于存储全episode的累积数据
 
     with sc2_env.SC2Env(
             map_name=map_name,
@@ -207,6 +208,9 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                     GL.add_value_list(ind_thread, "reward_low_list",
                                       GL.get_value(ind_thread, "sum_low_reward") / num_call_step_low)
                     GL.add_value_list(ind_thread, "episode_score_list", score)
+                    # 存储全episode的累积数据
+                    GL.add_value_list(ind_thread_all, "victory_or_defeat", iswin)
+                    GL.add_value_list(ind_thread_all, "episode_score_list", score)
                     # global_episode是FLAGS.snapshot_step的倍数+1，或指定回合数
                     # 存单个episode的reward变化，存储网络参数（tf.train.Saver().save(),见a3c_agent），存全局numpy以备急停
                     if (counter % FLAGS.snapshot_step == 1) or (counter in FLAGS.quicksave_step_list):
@@ -230,6 +234,11 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                             np.save("./DataForAnalysis/episode_score_list_thread" + str(i) + "episode" + str(
                                 counter) + ".npy",
                                     GL.get_value(i, "episode_score_list"))
+                        # 存储全episode的累积数据v
+                        np.save("./DataForAnalysis/victory_or_defeat_thread" + str(ind_thread_all) + "episode" + str(
+                            counter) + ".npy", GL.get_value(ind_thread_all, "victory_or_defeat"))
+                        np.save("./DataForAnalysis/episode_score_list_thread" + str(ind_thread_all) + "episode" + str(
+                            counter) + ".npy", GL.get_value(ind_thread_all, "episode_score_list"))
                     if counter >= FLAGS.max_episodes:  # 超过设定的最大训练回合数后，退出循环（等于线程结束）
                         break
 
@@ -249,6 +258,9 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                     GL.add_value_list(ind_thread, "reward_low_list",
                                       GL.get_value(ind_thread, "sum_low_reward") / num_call_step_low)
                     GL.add_value_list(ind_thread, "episode_score_list", score)
+                    # 存储全episode的累积数据
+                    GL.add_value_list(ind_thread_all, "victory_or_defeat", iswin)
+                    GL.add_value_list(ind_thread_all, "episode_score_list", score)
                 # global_episode是FLAGS.snapshot_step的倍数+1，或指定回合数
                 # 存单个episode的reward变化，存储网络参数（tf.train.Saver().save(),见a3c_agent），存全局numpy以备急停
                     if (counter % FLAGS.snapshot_step == 1) or (counter in FLAGS.quicksave_step_list):
@@ -271,6 +283,13 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                             np.save("./DataForAnalysis/episode_score_list_thread" + str(i) + "episode" + str(
                                 counter) + ".npy",
                                     GL.get_value(i, "episode_score_list"))
+                        # 存储全episode的累积数据
+                        np.save(
+                            "./DataForAnalysis/victory_or_defeat_thread" + str(ind_thread_all) + "episode" + str(
+                                counter) + ".npy", GL.get_value(ind_thread_all, "victory_or_defeat"))
+                        np.save(
+                            "./DataForAnalysis/episode_score_list_thread" + str(ind_thread_all) + "episode" + str(
+                                counter) + ".npy", GL.get_value(ind_thread_all, "episode_score_list"))
                     if counter >= FLAGS.max_episodes:  # 超过设定的最大训练回合数后，退出循环（等于线程结束）
                         break
 
