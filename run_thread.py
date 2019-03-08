@@ -25,15 +25,21 @@ def run_loop(agents, env, max_steps, ind_thread):
             num_call_step_low = 0  # 计算回合内调用下层网络的次数
             timesteps = env.reset()
             # reset函数返回TimeStep四元组（sc2_env.py 512行），包含的信息有4种，在知乎上PySC2详解的文章里有介绍
-            for a in agents:  # 为后面的for agent, timestep in zip(agents, timesteps) 快速遍历提供方便，所以写成单一元素的列表
-                a.reset()
+            for agent in agents:  # 为后面的for agent, timestep in zip(agents, timesteps) 快速遍历提供方便，所以写成单一元素的列表
+                agent.reset()
+                # saving = GL.get_saving()
+                # if saving:
+                #     time.sleep(120)
 
             while True:  # 底下发生的是回合内一个step的过程
                 ind_last = GL.get_value(ind_thread, "ind_micro")
                 num_steps += 1
                 GL.set_value(ind_thread, "num_steps", num_steps)
                 last_timesteps = timesteps
-                # DHN add:
+                # saving = GL.get_saving()
+                # if saving:
+                #     time.sleep(120)
+                    # DHN add:
                 if ind_last == -1 or ind_last == -99 or ind_last == 666:
                     # ind_last == -99 (表示宏动作里的微动作执行失败)
                     # ind_last == 666 (表示宏动作成功执行完毕）:
@@ -48,6 +54,8 @@ def run_loop(agents, env, max_steps, ind_thread):
                     ind_todo = GL.get_value(ind_thread, "ind_micro")
 
                 dir_high = GL.get_value(ind_thread, "dir_high")
+                print("dir_high: ", dir_high)
+                print("ind_todo: ", ind_todo)
                 action, call_step_low, act_id, macro_type, coord_type = action_micro(ind_thread, dir_high,
                                                                                      ind_todo)
                 # 关键一步，调用了macro_action.action_micro计算出选择的action和其他参数。
@@ -97,6 +105,8 @@ def run_loop(agents, env, max_steps, ind_thread):
                 # Only for a single player!
                 is_done = (num_steps >= max_steps) or timesteps[0].last()
                 # timesteps[0]是timesteps的第一个变量step_type（状态类型），last()为True即到了末状态
+                if num_call_step_low == 0:
+                    num_call_step_low = num_steps
                 yield [last_timesteps[0], action[0], timesteps[0]], \
                       is_done, num_steps, call_step_low, num_call_step_low, macro_type, coord_type
                 # yield适用于函数返回内容较多，占用内存量很大的情况。可以看成返回了一个列表（实际不是）
@@ -121,8 +131,8 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
         PARALLEL = FLAGS.parallel  # PARALLEL 指定开几个线程（几个游戏窗口在跑星际2）
         MAX_AGENT_STEPS = FLAGS.max_agent_steps  # 回合里agent的最大步数
     else:
-        PARALLEL = 1
-        # MAX_AGENT_STEPS = 1e5  # 回合里agent的最大步数
+        # PARALLEL = 1
+        PARALLEL = FLAGS.parallel  # PARALLEL 指定开几个线程（几个游戏窗口在跑星际2）
         MAX_AGENT_STEPS = FLAGS.max_agent_steps
     SNAPSHOT = FLAGS.snapshot_path + FLAGS.map + '/' + FLAGS.net
 
@@ -161,6 +171,8 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                         counter += 1
                         GL.set_episode_counter(counter)
                 iswin = replay_buffer_2[-1][-1].reward
+                obs = recorder[-1].observation
+                score = obs["score_cumulative"][0]
 
                 # 更新下层网络
                 if call_step_low:
@@ -188,15 +200,17 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                 if is_done:  # 最终状态，后续处理，存储数据
                     print("Episode_counter: ", counter)
                     print("obs.reward_isWin:", iswin)
+                    print('Episode score:  ', score)
                     GL.add_value_list(ind_thread, "victory_or_defeat", iswin)
                     GL.add_value_list(ind_thread, "reward_high_list",
                                       GL.get_value(ind_thread, "sum_high_reward") / num_steps)
                     GL.add_value_list(ind_thread, "reward_low_list",
                                       GL.get_value(ind_thread, "sum_low_reward") / num_call_step_low)
+                    GL.add_value_list(ind_thread, "episode_score_list", score)
                     # global_episode是FLAGS.snapshot_step的倍数+1，或指定回合数
                     # 存单个episode的reward变化，存储网络参数（tf.train.Saver().save(),见a3c_agent），存全局numpy以备急停
                     if (counter % FLAGS.snapshot_step == 1) or (counter in FLAGS.quicksave_step_list):
-                        agent.save_model(SNAPSHOT, counter)
+                        # agent.save_model(SNAPSHOT, counter)
                         for i in range(PARALLEL):
                             np.save(
                                 "./DataForAnalysis/low_reward_of_episode" + str(counter) + "thread" + str(i) + ".npy",
@@ -213,13 +227,52 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                             np.save("./DataForAnalysis/victory_or_defeat_thread" + str(i) + "episode" + str(
                                 counter) + ".npy",
                                     GL.get_value(i, "victory_or_defeat"))
+                            np.save("./DataForAnalysis/episode_score_list_thread" + str(i) + "episode" + str(
+                                counter) + ".npy",
+                                    GL.get_value(i, "episode_score_list"))
                     if counter >= FLAGS.max_episodes:  # 超过设定的最大训练回合数后，退出循环（等于线程结束）
                         break
 
-            elif is_done:  # 非训练模式下，回合结束的话，根据观测环境的结果在屏幕上打印出得分（is_done成立时的操作对比：
-                obs = recorder[-1].observation  # 训练模式下Counter/counter会加一，会更新网络参数，有可能存储网络参数，不打印得分；
-                score = obs["score_cumulative"][0]  # 非训练模式下不更新Counter/counter,不更新不存储网络参数，打印得分
-                print('Your score is ' + str(score) + '!')
+            else:    # 非训练模式
+                if is_done:  # 回合结束
+                    obs = recorder[-1].observation  # 训练模式下Counter/counter会加一，会更新网络参数，有可能存储网络参数，不打印得分；
+                    score = obs["score_cumulative"][0]  # 非训练模式下不更新Counter/counter,不更新不存储网络参数，打印得分
+                    counter = GL.get_episode_counter()
+                    counter += 1
+                    GL.set_episode_counter(counter)
+                    print("Episode_counter: ", counter)
+                    print("obs.reward_isWin:", recorder[-1].reward)
+                    print('Episode score:  ', score)
+                    GL.add_value_list(ind_thread, "victory_or_defeat", iswin)
+                    GL.add_value_list(ind_thread, "reward_high_list",
+                                      GL.get_value(ind_thread, "sum_high_reward") / num_steps)
+                    GL.add_value_list(ind_thread, "reward_low_list",
+                                      GL.get_value(ind_thread, "sum_low_reward") / num_call_step_low)
+                    GL.add_value_list(ind_thread, "episode_score_list", score)
+                # global_episode是FLAGS.snapshot_step的倍数+1，或指定回合数
+                # 存单个episode的reward变化，存储网络参数（tf.train.Saver().save(),见a3c_agent），存全局numpy以备急停
+                    if (counter % FLAGS.snapshot_step == 1) or (counter in FLAGS.quicksave_step_list):
+                        for i in range(PARALLEL):
+                            np.save(
+                                "./DataForAnalysis/low_reward_of_episode" + str(counter) + "thread" + str(i) + ".npy",
+                                GL.get_value(i, "low_reward_of_episode"))
+                            np.save(
+                                "./DataForAnalysis/high_reward_of_episode" + str(counter) + "thread" + str(i) + ".npy",
+                                GL.get_value(i, "high_reward_of_episode"))
+                            np.save(
+                                "./DataForAnalysis/low_reward_list_thread" + str(i) + "episode" + str(counter) + ".npy",
+                                GL.get_value(i, "reward_low_list"))
+                            np.save("./DataForAnalysis/high_reward_list_thread" + str(i) + "episode" + str(
+                                counter) + ".npy",
+                                    GL.get_value(i, "reward_high_list"))
+                            np.save("./DataForAnalysis/victory_or_defeat_thread" + str(i) + "episode" + str(
+                                counter) + ".npy",
+                                    GL.get_value(i, "victory_or_defeat"))
+                            np.save("./DataForAnalysis/episode_score_list_thread" + str(i) + "episode" + str(
+                                counter) + ".npy",
+                                    GL.get_value(i, "episode_score_list"))
+                    if counter >= FLAGS.max_episodes:  # 超过设定的最大训练回合数后，退出循环（等于线程结束）
+                        break
 
         if FLAGS.save_replay:  # 若设置为True，保存该线程的游戏回放
             env.save_replay(agent.name)

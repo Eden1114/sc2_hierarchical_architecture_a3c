@@ -19,7 +19,7 @@ import utils as U
 _, num_macro_action = GL.get_list()
 
 
-# 在main.py中调用build_model和initialize，按需调用update_low和high，step_low和high由update调用
+# 在main.py中调用build_model和initialize，run_thread函数按需调用update_low和high，run_loop函数调用step_low和high
 
 class A3CAgent(object):
     """An agent specifically for solving the mini-game maps."""
@@ -192,7 +192,9 @@ class A3CAgent(object):
         # valid_dir_high = obs.observation['available_actions']
         dir_high_id = np.argmax(dir_high)  # 获取要执行的宏动作id（从0开始）
         # Epsilon greedy exploration  # 0.05(epsilon[0])的概率随机选一个宏动作（会覆盖之前的dir_high_id）
-        if self.training and np.random.rand() < self.epsilon[0]:
+        # if self.training and np.random.rand() < self.epsilon[0]:
+        #     dir_high_id = random.randint(0, num_macro_action - 1)
+        if np.random.rand() < self.epsilon[0]:
             dir_high_id = random.randint(0, num_macro_action - 1)
 
         return dir_high_id
@@ -237,7 +239,8 @@ class A3CAgent(object):
         target = [int(target // self.ssize),
                   int(target % self.ssize)]  # 获取要施加动作的位置 疑问：若action是勾选方框怎么办？target只有一个坐标吧，那另一个坐标呢？
         # Epsilon greedy exploration  # 0.2(epsilon[1])的概率随机选一个位置施加动作
-        if self.training and np.random.rand() < self.epsilon[1]:
+        # if self.training and np.random.rand() < self.epsilon[1]:
+        if np.random.rand() < self.epsilon[1]:
             dy = np.random.randint(-4, 5)
             target[0] = int(max(0, min(self.ssize - 1, target[0] + dy)))
             dx = np.random.randint(-4, 5)
@@ -471,6 +474,7 @@ class A3CAgent(object):
         GL.set_value(ind_thread, "micro_isdone", [])
 
     def save_model(self, path, count):
+        GL.set_saving(True)
         self.saver.save(self.sess, path + '/model.pkl', count)
 
     def load_model(self, path):

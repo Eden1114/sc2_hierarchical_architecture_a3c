@@ -28,7 +28,8 @@ if FLAGS.training:
     PARALLEL = FLAGS.parallel  # PARALLEL 指定开几个线程（几个游戏窗口在跑星际2）
     DEVICE = ['/gpu:' + dev for dev in FLAGS.device.split(',')]
 else:
-    PARALLEL = 1
+    # PARALLEL = 1
+    PARALLEL = FLAGS.parallel  # PARALLEL 指定开几个线程（几个游戏窗口在跑星际2）
     DEVICE = ['/cpu:0']
 
 GL.global_init(PARALLEL)
@@ -69,7 +70,12 @@ def _main(unused_argv):
     # agent就是“包含agents.append(agent)的循环”当中的那个局部变量agent，局部变量能够在外部使用，大概是python(3)神奇的特性...所以agent就是最后一个创建的A3CAgent对象
     agent.initialize()  # run(tf.global_variables_initializer())以初始化每个agent中的tf图
     # 模型读取
-    if not FLAGS.training or FLAGS.continuation:  # 若不是训练模式 或 若是持续性训练，则利用原有数据（训练好的参数，存在了snapshot文件夹里）进行训练
+    if not FLAGS.training:  # 若不是训练模式
+        COUNTER = agent.load_model(SNAPSHOT)
+        COUNTER = 0
+        GL.set_episode_counter(COUNTER)
+        print("Non-training Mode")
+    if FLAGS.continuation:  # 若是继续训练，则利用原有数据（训练好的参数，存在了snapshot文件夹里）进行训练
         COUNTER = agent.load_model(SNAPSHOT)
         GL.set_episode_counter(COUNTER)
         # 全局变量COUNTER记录的是当前所有线程加在一起，总共完成的回合数
@@ -93,6 +99,7 @@ def _main(unused_argv):
         np.save("./DataForAnalysis/low_reward_list_thread" + str(i) + ".npy", GL.get_value(i, "reward_low_list"))
         np.save("./DataForAnalysis/high_reward_list_thread" + str(i) + ".npy", GL.get_value(i, "reward_high_list"))
         np.save("./DataForAnalysis/victory_or_defeat_thread" + str(i) + ".npy", GL.get_value(i, "victory_or_defeat"))
+        np.save("./DataForAnalysis/episode_score_list_thread" + str(i) + ".npy", GL.get_value(i, "episode_score_list"))
     print('Fin. ')
 
 
