@@ -8,14 +8,12 @@ def global_init(index):
     for i in range(index+1):
         dict = {"num_steps": 0, "ind_micro": -9999, "act_id_micro": -9999, "dir_high": -9999,
                 "supply_num": -9999, "barrack_num": -9999, "barrack_location": [],
-                "micro_isdone": [],
                 "reward_low_list": [], "reward_high_list": [],
                 "sum_high_reward": -9999, "sum_low_reward": -9999,
                 "high_reward_of_episode": [], "low_reward_of_episode": [],
                 "victory_or_defeat": [], "barrack_location_NotSure": [-99, -99],
                 "episode_score_list": [], "high_reward_decay": 0,
                 "low_reward_decay": 0}
-        # micro_isdone 成功是1，失败是-1
         global_var_dict.append(dict)
 
 
