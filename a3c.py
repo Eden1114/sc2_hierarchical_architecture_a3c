@@ -1,4 +1,3 @@
-import sys
 import time
 import threading
 import numpy as np
@@ -7,9 +6,8 @@ from pysc2.lib import actions
 from pysc2.lib import features
 import tensorflow as tf
 import tensorflow.contrib.layers as layers
-from absl import flags
-flags.DEFINE_string('f', '', 'kernel')  # jupyter运行问题
-flags.FLAGS(sys.argv)
+import globalvar as gl
+from a3c_reward import a3c_reward
 
 tf.set_random_seed(1)
 config = tf.ConfigProto(allow_soft_placement=True)  # auto distribute device
@@ -50,21 +48,22 @@ def preprocess_screen(feature_screen):
     return np.expand_dims(np.concatenate(layers, axis=0), axis=0)
 
 
-class Agent:
-    def __init__(self, sess):
+class A3C:
+    def __init__(self, sess, reuse):
+        self.action_num = len(actions.FUNCTIONS)
+        
         # 每个agent单独的会话、单独的观测传参
         self.sess = sess
         self.minimap = tf.placeholder(tf.float32, [None, 17, 64, 64])
         self.screen = tf.placeholder(tf.float32, [None, 42, 64, 64])
-        self.info = tf.placeholder(tf.float32, [None, action_num])
+        self.info = tf.placeholder(tf.float32, [None, self.action_num])
 
         self.spatial_mask = tf.placeholder(tf.float32, [None])
         self.spatial_choose = tf.placeholder(tf.float32, [None, 64 ** 2])
-        self.non_spatial_mask = tf.placeholder(tf.float32, [None, action_num])
-        self.non_spatial_choose = tf.placeholder(tf.float32, [None, action_num])
+        self.non_spatial_mask = tf.placeholder(tf.float32, [None, self.action_num])
+        self.non_spatial_choose = tf.placeholder(tf.float32, [None, self.action_num])
         self.q_target_value = tf.placeholder(tf.float32, [None])
 
-    def build(self, reuse):
         with tf.variable_scope('agent') and tf.device('/gpu:0'):
             if reuse:
                 tf.get_variable_scope().reuse_variables()
@@ -93,7 +92,7 @@ class Agent:
 
             self.spatial_action = tf.nn.softmax(layers.flatten(conv_feature))
 
-            self.non_spatial_action = layers.fully_connected(flatten_feature, action_num, activation_fn=tf.nn.softmax,
+            self.non_spatial_action = layers.fully_connected(flatten_feature, self.action_num, activation_fn=tf.nn.softmax,
                                                              scope='non_spatial_action')
 
             # ———————————————— 策略提升网络 —————————————————— #
@@ -116,11 +115,17 @@ class Agent:
             policy_loss = - tf.reduce_mean(action_log_prob * advantage)
             value_loss = 0.25 * tf.reduce_mean(tf.square(self.q_value * advantage))
 
+            # ——————— 加入entropy loss ——————— #
+            # entropy = - (tf.reduce_sum(spatial_prob * spatial_log_prob, axis=-1) +
+            #              tf.reduce_sum(non_spatial_prob * non_spatial_log_prob, axis=-1))
+            # entropy_loss = - 1e-3 * tf.reduce_mean(entropy)
+            # loss = policy_loss + value_loss + entropy_loss
+
             loss = policy_loss + value_loss
 
             # ———————————————— 训练定义 —————————————————— #
 
-            opt = tf.train.RMSPropOptimizer(learning_rate, decay=0.99, epsilon=1e-10)
+            opt = tf.train.RMSPropOptimizer(5e-4, decay=0.99, epsilon=1e-10)  # TODO 学习率等参数设置
             grads = opt.compute_gradients(loss)
             cliped_grad = []
             for grad, var in grads:
@@ -128,11 +133,11 @@ class Agent:
                 cliped_grad.append([grad, var])
             self.train_op = opt.apply_gradients(cliped_grad)
 
-    def step(self, state):
+    def choose_action(self, state):
         minimap = preprocess_minimap(state.observation['feature_minimap'])
         screen = preprocess_screen(state.observation['feature_screen'])
 
-        info = np.zeros([1, action_num], dtype=np.float32)
+        info = np.zeros([1, self.action_num], dtype=np.float32)
         info[0, state.observation['available_actions']] = 1  # TODO 未知设置
 
         feed = {self.minimap: minimap, self.screen: screen, self.info: info}
@@ -145,10 +150,23 @@ class Agent:
         spatial_action = spatial_action.ravel()
 
         valid_actions = state.observation['available_actions']
+
+        # ——————— 加入epsilon随机值衰减 ——————— #
+        # epsilon = [0.05, 0.2]
+        # if counter >= 2000:
+        #     epsilon[0] = epsilon[0] / 1.005
+        #     epsilon[1] = epsilon[1] / 1.005
+        #
+        # if np.random.rand() < epsilon[0]:
+        #     action_id = np.random.choice(valid_actions)
+        # if np.random.rand() < epsilon[1]:
+        #     noise = np.random.randint(-4, 5)
+        #     location[0] = int(max(0, min(64 - 1, location[0] + noise)))
+        #     location[1] = int(max(0, min(64 - 1, location[1] + noise)))
         
-        act_id = valid_actions[np.argmax(non_spatial_action[valid_actions])]
+        action_id = valid_actions[np.argmax(non_spatial_action[valid_actions])]
         if np.random.rand() < 0.05:  # 随机选择动作
-            act_id = np.random.choice(valid_actions)
+            action_id = np.random.choice(valid_actions)
 
         location = np.argmax(spatial_action)
         location = [int(location // 64), int(location % 64)]
@@ -157,15 +175,15 @@ class Agent:
             location[0] = int(max(0, min(64 - 1, location[0] + noise)))
             location[1] = int(max(0, min(64 - 1, location[1] + noise)))
 
-        act_args = []
-        for arg in actions.FUNCTIONS[act_id].args:
+        action_args = []
+        for arg in actions.FUNCTIONS[action_id].args:
             if arg.name in ('screen', 'minimap', 'screen2'):
-                act_args.append([location[1], location[0]])
+                action_args.append([location[1], location[0]])
             else:
-                act_args.append([0])  # TODO 未知该参数意义
-        return actions.FunctionCall(act_id, act_args)
+                action_args.append([0])  # TODO 未知该参数意义
+        return action_id, action_args
 
-    def update(self, buffer):
+    def update(self, buffer, epoch, thread_index):
         last_state = buffer[-1][-1]
 
         if last_state.last():
@@ -173,7 +191,7 @@ class Agent:
         else:
             minimap = preprocess_minimap(last_state.observation['feature_minimap'])
             screen = preprocess_screen(last_state.observation['feature_screen'])
-            info = np.zeros([1, action_num], dtype=np.float32)
+            info = np.zeros([1, self.action_num], dtype=np.float32)
             info[0, last_state.observation['available_actions']] = 1
 
             feed = {self.minimap: minimap,
@@ -187,35 +205,41 @@ class Agent:
         infos = []
         rewards = []
 
+        # ————— 原计算target value的设计 ————————— #
+        # target_value = np.zeros([len(buffer)], dtype=np.float32)
+        # target_value[-1] = R
+
         spatial_mask = np.zeros([len(buffer)], dtype=np.float32)
         spatial_choose = np.zeros([len(buffer), 64 ** 2], dtype=np.float32)
-        non_spatial_mask = np.zeros([len(buffer), action_num], dtype=np.float32)
-        non_spatial_choose = np.zeros([len(buffer), action_num], dtype=np.float32)
+        non_spatial_mask = np.zeros([len(buffer), self.action_num], dtype=np.float32)
+        non_spatial_choose = np.zeros([len(buffer), self.action_num], dtype=np.float32)
 
-        for i, [state, action, _] in enumerate(buffer):
+        micro_isdone = gl.get_value(thread_index, "micro_isdone")
+
+        for i, [state, action_id, action_args, next_state] in enumerate(buffer):
             # 求解minimap、screen、info、reward
             minimap = preprocess_minimap(state.observation['feature_minimap'])
             screen = preprocess_screen(state.observation['feature_screen'])
-            info = np.zeros([1, action_num], dtype=np.float32)
+            info = np.zeros([1, self.action_num], dtype=np.float32)
             info[0, state.observation['available_actions']] = 1
 
-            reward = state.reward
+            reward = a3c_reward(thread_index, next_state, state, micro_isdone[i], coordinate, macro_type, coord_type)
 
             minimaps.append(minimap)
             screens.append(screen)
             infos.append(info)
             rewards.append(reward)
 
-            # 求解mask和choose
-            act_id = action.function
-            act_args = action.arguments
+            # ——————— 原计算target value的设计 ————————— #
+            # target_value[i] = reward + 0.99 * target_value[i - 1]
 
+            # 求解mask和choose
             valid_actions = state.observation["available_actions"]
             non_spatial_mask[i, valid_actions] = 1
-            non_spatial_choose[i, act_id] = 1
+            non_spatial_choose[i, action_id] = 1
 
-            args = actions.FUNCTIONS[act_id].args  # TODO 这部分具体意义待测试
-            for arg, act_arg in zip(args, act_args):
+            args = actions.FUNCTIONS[action_id].args  # TODO 这部分具体意义待测试
+            for arg, act_arg in zip(args, action_args):
                 if arg.name in ('screen', 'minimap', 'screen2'):
                     ind = act_arg[1] * 64 + act_arg[0]
                     spatial_mask[i] = 1
@@ -242,57 +266,72 @@ class Agent:
                 self.non_spatial_choose: non_spatial_choose}
         self.sess.run(self.train_op, feed_dict=feed)
 
+        if sum(rewards) > 2:
+            print(epoch)
 
-def run(agent, map_name):
-    players = [sc2_env.Agent(sc2_env.Race['terran']),
-               sc2_env.Bot(sc2_env.Race['terran'], sc2_env.Difficulty['very_easy'])]
+
+def build_env(map_name):
+    if map_name == 'Simple64':
+        players = [sc2_env.Agent(sc2_env.Race['terran']),
+                   sc2_env.Bot(sc2_env.Race['terran'], sc2_env.Difficulty['very_easy'])]
+    else:
+        players = [sc2_env.Agent(sc2_env.Race['terran'])]
     interface = sc2_env.parse_agent_interface_format(feature_screen=64, feature_minimap=64)
     env = sc2_env.SC2Env(map_name=map_name, players=players, step_mul=8, agent_interface_format=interface)
+    return env
 
+
+def run(agent, max_epoch, map_name, thread_index):
+    env = build_env(map_name)
     buffer = []
-    for _ in range(max_epoch):
+    
+    for epoch in range(max_epoch):
+        # episode
         state = env.reset()[0]
-
+        counter = 0    # step_counter
+        max_step = 4000
+        gl.episode_init(thread_index)
         while True:
-            action = agent.step(state)
-            next_state = env.step([action])[0]
+            # step
+            counter += 1
 
-            buffer.append([state, action, next_state])
+            action_id, action_args = agent.choose_action(state)
+            next_state = env.step([actions.FunctionCall(action_id, action_args)])[0]
 
-            if next_state.last():  # TODO buffer学习的判断具体设置（num_frames >= max_frames）
-                agent.update(buffer)  # TODO 是否加入lr衰减
+            buffer.append([state, action_id, action_args, next_state])
+
+            if counter % 200 == 0:
+                agent.update(buffer, epoch, thread_index)  # TODO 是否加入lr衰减
                 buffer = []
+
+            if counter >= max_step or next_state.last():  # TODO buffer学习的判断具体设置（num_frames >= max_frames）
                 break
-                
+
             state = next_state
-
+    
     env.close()
+            
+
+def run_a3c(max_epoch, map_name, parallel):
+    sess = tf.Session(config=config)
+
+    agents = []
+    for i in range(parallel):
+        agent = A3C(sess, i > 0)
+        agents.append(agent)
+        
+    sess.run(tf.global_variables_initializer())
+
+    threads = []
+    for i in range(parallel):
+        t = threading.Thread(target=run, args=(agents[i], max_epoch, map_name, i))
+        threads.append(t)
+        t.daemon = True
+        t.start()
+        time.sleep(5)
+
+    coord = tf.train.Coordinator()
+    coord.join(threads)
 
 
-max_epoch = 4000
-parallel = 3
-map_name = 'Simple64'
-learning_rate = 5e-4
-action_num = len(actions.FUNCTIONS)
 
-sess = tf.Session(config=config)
-
-agents = []
-for i in range(parallel):
-    agent = Agent(sess)
-    agent.build(i > 0)
-    agents.append(agent)
-sess.run(tf.global_variables_initializer())
-
-threads = []
-for i in range(parallel - 1):
-    t = threading.Thread(target=run, args=(agents[i], map_name))
-    threads.append(t)
-    t.daemon = True
-    t.start()
-    time.sleep(5)
-
-run(agents[-1], map_name)
-
-coord = tf.train.Coordinator()
-coord.join(threads)

@@ -68,7 +68,9 @@ class A3CAgent(object):
             # Set inputs of networks 网络输入量为以下3项
             self.minimap = tf.placeholder(tf.float32, [None, U.minimap_channel(), self.msize, self.msize],
                                           name='minimap')
+            print("minimap", U.minimap_channel())
             self.screen = tf.placeholder(tf.float32, [None, U.screen_channel(), self.ssize, self.ssize], name='screen')
+            print("screen", U.screen_channel())
             self.info_high = tf.placeholder(tf.float32, [None, self.isize + self.info_plus_size_high], name='info_high')
             self.info_low = tf.placeholder(tf.float32, [None, self.isize + self.info_plus_size_low], name='info_low')
             self.dir_high_usedToFeedLowNet = tf.placeholder(tf.float32, [1, 1], name='dir_high_usedToFeedLowNet')
