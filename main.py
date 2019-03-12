@@ -71,7 +71,7 @@ def _main(unused_argv):
     agent.initialize()  # run(tf.global_variables_initializer())以初始化每个agent中的tf图
     # 模型读取
     if not FLAGS.training:  # 若不是训练模式
-        COUNTER = agent.load_model(SNAPSHOT)
+        _ = agent.load_model(SNAPSHOT)
         COUNTER = 0
         GL.set_episode_counter(COUNTER)
         print("Non-training Mode")

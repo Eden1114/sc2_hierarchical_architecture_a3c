@@ -15,6 +15,8 @@ list_actions, _ = GL.get_list()
 # agents是列表，里面有一个agent（A3CAgent对象），env是SC2Env对象经过处理后的变量，max_frames是回合内最多进行的step数
 # 190305：将main的run_thread与原有的run_loop放到同一个文件内。
 # run_thread.py是main与agent的衔接，run_thread负责执行thread，run_loop控制episode与step进程，控制agent和环境的交互，控制数据保存
+# 在main.py中调用agent.build_model和initialize，run_thread函数按需调用agent.update_low和high，run_loop函数调用agent.step_low和high
+# 先由run_loop调用step，再由run_thread调用update
 def run_loop(agents, env, max_steps, ind_thread):
     start_time = time.time()
     try:
@@ -202,15 +204,18 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                     print("Episode_counter: ", counter)
                     print("obs.reward_isWin:", iswin)
                     print('Episode score:  ', score)
+                    high_reward_avg = GL.get_value(ind_thread, "sum_high_reward") / num_steps
+                    low_reward_avg = GL.get_value(ind_thread, "sum_low_reward") / num_call_step_low
                     GL.add_value_list(ind_thread, "victory_or_defeat", iswin)
-                    GL.add_value_list(ind_thread, "reward_high_list",
-                                      GL.get_value(ind_thread, "sum_high_reward") / num_steps)
-                    GL.add_value_list(ind_thread, "reward_low_list",
-                                      GL.get_value(ind_thread, "sum_low_reward") / num_call_step_low)
+                    GL.add_value_list(ind_thread, "reward_high_list", high_reward_avg)
+                    GL.add_value_list(ind_thread, "reward_low_list", low_reward_avg)
                     GL.add_value_list(ind_thread, "episode_score_list", score)
                     # 存储全episode的累积数据
                     GL.add_value_list(ind_thread_all, "victory_or_defeat", iswin)
                     GL.add_value_list(ind_thread_all, "episode_score_list", score)
+                    # 存储reward_decay，用于调节学习率和epsilon-greedy的衰减程度
+                    high_reward_decay = FLAGS.discount * high_reward_avg
+                    GL.set_value(high_reward_decay)
                     # global_episode是FLAGS.snapshot_step的倍数+1，或指定回合数
                     # 存单个episode的reward变化，存储网络参数（tf.train.Saver().save(),见a3c_agent），存全局numpy以备急停
                     if (counter % FLAGS.snapshot_step == 1) or (counter in FLAGS.quicksave_step_list):

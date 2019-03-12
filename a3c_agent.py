@@ -36,6 +36,7 @@ class A3CAgent(object):
         self.training = training
         self.summary_low = []
         self.summary_high = []
+        self.reward_sum_decay = 0.99    # 与config的discount同步，用于计算reward_decay，动态评估与改变学习率和epsilon-greedy
         # Minimap size, screen size and info size
         assert msize == ssize
         self.msize = msize
@@ -192,10 +193,11 @@ class A3CAgent(object):
         # valid_dir_high = obs.observation['available_actions']
         dir_high_id = np.argmax(dir_high)  # 获取要执行的宏动作id（从0开始）
         # Epsilon greedy exploration  # 0.05(epsilon[0])的概率随机选一个宏动作（会覆盖之前的dir_high_id）
-        # if self.training and np.random.rand() < self.epsilon[0]:
-        #     dir_high_id = random.randint(0, num_macro_action - 1)
-        if np.random.rand() < self.epsilon[0]:
+        # Epsilon greedy 是在step内部的，在返回动作之前。update接收到的动作是greedy之后的动作。
+        if self.training and np.random.rand() < self.epsilon[0]:
             dir_high_id = random.randint(0, num_macro_action - 1)
+        # if np.random.rand() < self.epsilon[0]:
+        #     dir_high_id = random.randint(0, num_macro_action - 1)
 
         return dir_high_id
 
@@ -239,8 +241,8 @@ class A3CAgent(object):
         target = [int(target // self.ssize),
                   int(target % self.ssize)]  # 获取要施加动作的位置 疑问：若action是勾选方框怎么办？target只有一个坐标吧，那另一个坐标呢？
         # Epsilon greedy exploration  # 0.2(epsilon[1])的概率随机选一个位置施加动作
-        # if self.training and np.random.rand() < self.epsilon[1]:
-        if np.random.rand() < self.epsilon[1]:
+        if self.training and np.random.rand() < self.epsilon[1]:
+        # if np.random.rand() < self.epsilon[1]:
             dy = np.random.randint(-4, 5)
             target[0] = int(max(0, min(self.ssize - 1, target[0] + dy)))
             dx = np.random.randint(-4, 5)
@@ -458,6 +460,8 @@ class A3CAgent(object):
                     spatial_action_selected[i, ind] = 1
 
         GL.set_value(ind_thread, "sum_high_reward", sum_high_reward)
+        high_reward_decay = sum_high_reward * self.reward_sum_decay
+        GL.set_value(ind_thread, "high_reward_decay", high_reward_decay)
         minimaps = np.concatenate(minimaps, axis=0)
         screens = np.concatenate(screens, axis=0)
         infos = np.concatenate(infos, axis=0)
