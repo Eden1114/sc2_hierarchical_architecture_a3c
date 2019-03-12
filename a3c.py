@@ -153,7 +153,7 @@ class A3C:
         non_spatial_action = non_spatial_action.ravel()  # TODO ravel函数作用待解释
         spatial_action = spatial_action.ravel()
         valid_actions = [0, 1, 2, 3, 4, 5]
-        action_id = valid_actions[np.argmax(non_spatial_action[valid_actions])]
+        action_id = valid_actions[np.argmax(non_spatial_action[valid_actions])]    # TODO：valid_action设置是否正确
         if np.random.rand() < 0.05:  # 随机选择动作
             action_id = np.random.choice(valid_actions)
 
