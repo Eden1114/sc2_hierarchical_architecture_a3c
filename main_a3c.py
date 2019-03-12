@@ -1,4 +1,5 @@
 from a3c import *
+import globalvar as GL
 
 import sys
 from absl import flags
@@ -10,4 +11,5 @@ map_name = 'Simple64'
 parallel = 4  # GeForce GTX1080Ti
 # parallel = 3  # GeForce GTX1070
 
+GL.global_init(parallel)
 run_a3c(max_epoch, map_name, parallel)

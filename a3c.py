@@ -140,7 +140,7 @@ class A3C:
                 cliped_grad.append([grad, var])
             self.train_op = opt.apply_gradients(cliped_grad)
 
-    def step(self, state, thread_index):
+    def step(self, state, env, thread_index):
         minimap = preprocess_minimap(state.observation['feature_minimap'])
         screen = preprocess_screen(state.observation['feature_screen'])
         # info = np.zeros([1, self.action_num], dtype=np.float32)
@@ -153,9 +153,10 @@ class A3C:
         non_spatial_action = non_spatial_action.ravel()  # TODO ravel函数作用待解释
         spatial_action = spatial_action.ravel()
         valid_actions = [0, 1, 2, 3, 4, 5]
-        action_id = valid_actions[np.argmax(non_spatial_action[valid_actions])]    # TODO：valid_action设置是否正确
-        if np.random.rand() < 0.05:  # 随机选择动作
-            action_id = np.random.choice(valid_actions)
+        # action_id = valid_actions[np.argmax(non_spatial_action[valid_actions])]    # TODO：valid_action设置是否正确
+        macro_id = np.argmax(non_spatial_action)
+        if np.random.rand() < 0.05:  # 随机选择动作 epsilon-greedy
+            macro_id = np.random.choice(valid_actions)
 
         location = np.argmax(spatial_action)
         location = [int(location // 64), int(location % 64)]  # 注意坐标的x,y顺序是反的
@@ -165,11 +166,12 @@ class A3C:
             location[1] = int(max(0, min(64 - 1, location[1] + noise)))
         location.reverse()    # 后面再用的时候，顺序就对了，注意
 
+        action_args = []
         ind_last = GL.get_value(thread_index, "ind_micro")
         if ind_last == -1 or ind_last == -99 or ind_last == 666:
             # ind_last == -99 (表示宏动作里的微动作执行失败)
             # ind_last == 666 (表示宏动作成功执行完毕）
-            GL.set_value(thread_index, "dir_high", non_spatial_action)
+            GL.set_value(thread_index, "dir_high", macro_id)
             GL.set_value(thread_index, "ind_micro", 0)
             ind_todo = GL.get_value(thread_index, "ind_micro")
         else:
@@ -177,43 +179,44 @@ class A3C:
             GL.set_value(thread_index, "ind_micro", temp + 1)
             ind_todo = GL.get_value(thread_index, "ind_micro")
 
-        dir_high = GL.get_value(thread_index, "dir_high")  # non_spatial_action
-        print("dir_high: ", dir_high)
+        macro_id = GL.get_value(thread_index, "dir_high")  # non_spatial_action
+        print("macro_id: ", macro_id)
         print("ind_todo: ", ind_todo)
-        action, call_spatial, act_id, macro_type, coord_type = action_micro(thread_index, dir_high,
+        action, call_spatial, action_id, macro_type, coord_type = action_micro(thread_index, macro_id,
                                                                             ind_todo)
         # 关键一步，调用了macro_action.action_micro计算出选择的action和其他参数。
-        # 如果call_step_low为False，则act_id没用了，直接使用上行中的action
+        # 如果call_spatial为False，则act_id没用了，直接使用上行中的action
         # 如果其为True，则进入以下的模块，action没用了，act_id被使用来计算新的action
         if call_spatial:
             GL.set_value(thread_index, "act_id_micro", ind_todo)
-            if dir_high == 2 and ind_todo == 3:  # 代表当前要执行的动作是宏动作“build_barrack”中的序号3微动作：造兵营（动作函数42）
+            if macro_id == 2 and ind_todo == 3:  # 代表当前要执行的动作是宏动作“build_barrack”中的序号3微动作：造兵营（动作函数42）
                 GL.set_value(thread_index, "barrack_location_NotSure", [location[0], location[1]])
                 print("Thread ", thread_index, end=" ")
                 print("Barrack_location_NotSure: ", [location[0], location[1]])
-            action_args = []
-            for arg in actions.FUNCTIONS[act_id].args:  # actions是pysc2.lib中的文件 根据act_id获取其可使用的参数，并添加到args中去
+            # action_args = []
+            for arg in actions.FUNCTIONS[action_id].args:  # actions是pysc2.lib中的文件 根据act_id获取其可使用的参数，并添加到args中去
                 if arg.name in ('screen', 'minimap', 'screen2'):
                     action_args.append([location[0], location[1]])
                 else:
                     action_args.append([0])  # TODO: Be careful
-                action = [actions.FunctionCall(act_id, action_args)]
+                action = [actions.FunctionCall(action_id, action_args)]
+                print("action_args", action_args)
 
         # 校验宏动作：
         flag_success = True
-        if list_actions[dir_high][ind_todo] not in last_timesteps[0].observation['available_actions']:
+        if list_actions[macro_id][ind_todo] not in state.observation['available_actions']:
             GL.set_value(thread_index, "ind_micro", -99)  # 表示宏动作里的微动作执行失败
             action = [actions.FunctionCall(function=0, arguments=[])]  # 执行no_op
             flag_success = False
             # 当ind_todo是最后一个需要执行的动作，且执行成功时，将ind_done[ind_thread]设为666（即宏动作成功执行完毕）
-        if ind_todo == len(list_actions[dir_high]) - 1 and flag_success:
+        if ind_todo == len(list_actions[macro_id]) - 1 and flag_success:
             GL.set_value(thread_index, "ind_micro", 666)  # 表示宏动作执行到了最后一步微动作且执行成功
-        timesteps = env.step(action)  # env环境的step函数根据动作计算出下一个timesteps
+        next_state = env.step(action)[0]  # env环境的step函数根据动作计算出下一个step
         # 动作函数合法但失败（比如造补给站在available_action_list里，但选的建造坐标在基地的位置上，则造不出来），则将ind_micro置为-99，表示“宏动作执行失败”
-        if not len(timesteps[0].observation.last_actions) and action[0].function != 1:
+        if not len(next_state.observation.last_actions) and action[0].function != 1:
             GL.set_value(thread_index, "ind_micro", -99)
         # 代表当前要执行的动作是宏动作“build_barrack”中的序号3微动作：造兵营（动作函数42）,【且执行成功（ind_micro != 99）】（也有可能没成功，比如造了一半农民走了or造了一半被敌方拆了）
-        if dir_high == 2 and ind_todo == 3 and GL.get_value(thread_index, "ind_micro") != -99:
+        if macro_id == 2 and ind_todo == 3 and GL.get_value(thread_index, "ind_micro") != -99:
             barrack_location = GL.get_value(thread_index, "barrack_location_NotSure")
             GL.add_value_list(thread_index, "barrack_location", barrack_location)
 
@@ -232,7 +235,7 @@ class A3C:
         #     location[1] = int(max(0, min(64 - 1, location[1] + noise)))        
         # valid_actions = state.observation['available_actions']
 
-        return action_id, action_args, flag_success, location, non_spatial_action, macro_type, coord_type
+        return action_id, action_args, next_state, flag_success, location, macro_id, macro_type, coord_type
 
     def update(self, buffer, epoch, thread_index):
         last_state = buffer[-1][-1]
@@ -271,7 +274,7 @@ class A3C:
             valid_actions = [0, 1, 2, 3, 4, 5]
             non_spatial_mask[i, valid_actions] = 1  # 可用命令列表
             non_spatial_choose[i, action_id] = 1
-            # TODO: macro_aaction的处理语句
+            # TODO: macro_action的处理语句
 
             args = actions.FUNCTIONS[action_id].args  # TODO 这部分具体意义待测试
             for arg, act_arg in zip(args, action_args):
@@ -338,9 +341,9 @@ def run(agent, max_epoch, map_name, thread_index):
             # step
             counter += 1
             GL.set_value(thread_index, "num_steps", counter)
-            action_id, action_args, flag_success, location, macro_id, macro_type, coord_type = agent.step(state,
+            action_id, action_args, next_state, flag_success, location, macro_id, macro_type, coord_type = agent.step(state, env,
                                                                                                           thread_index)
-            next_state = env.step([actions.FunctionCall(action_id, action_args)])[0]
+            # next_state = env.step([actions.FunctionCall(action_id, action_args)])[0]
             reward = a3c_reward(thread_index, next_state, state, flag_success, location, macro_id, macro_type,
                                 coord_type)
             buffer.append([state, action_id, action_args, next_state, reward])
