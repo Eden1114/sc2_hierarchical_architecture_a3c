@@ -4,6 +4,8 @@ import numpy as np
 from pysc2.env import sc2_env
 from pysc2.lib import actions
 from pysc2.lib import features
+from pysc2 import maps
+from pysc2.lib import stopwatch
 import tensorflow as tf
 import tensorflow.contrib.layers as layers
 import globalvar as GL
@@ -109,7 +111,6 @@ class A3C:
             # 求动作选择的似然概率
             spatial_prob = tf.reduce_sum(self.spatial_action * self.spatial_choose, axis=1)
             spatial_log_prob = tf.log(tf.clip_by_value(spatial_prob, 1e-10, 1.))
-
             non_spatial_prob = tf.reduce_sum(self.non_spatial_action * self.non_spatial_choose, axis=1)
             valid_non_spatial_prob = tf.reduce_sum(self.non_spatial_action * self.non_spatial_mask, axis=1)
             valid_non_spatial_prob = tf.clip_by_value(valid_non_spatial_prob, 1e-10, 1.)
@@ -139,6 +140,7 @@ class A3C:
                 grad = tf.clip_by_norm(grad, 10.0)
                 cliped_grad.append([grad, var])
             self.train_op = opt.apply_gradients(cliped_grad)
+            self.saver = tf.train.Saver(max_to_keep=100)  # 定义self.saver 为 tf的存储器Saver()，在save_model和load_model函数里使用
 
     def step(self, state, env, thread_index):
         minimap = preprocess_minimap(state.observation['feature_minimap'])
@@ -180,8 +182,6 @@ class A3C:
             ind_todo = GL.get_value(thread_index, "ind_micro")
 
         macro_id = GL.get_value(thread_index, "dir_high")  # non_spatial_action
-        print("macro_id: ", macro_id)
-        print("ind_todo: ", ind_todo)
         action, call_spatial, action_id, macro_type, coord_type = action_micro(thread_index, macro_id,
                                                                             ind_todo)
         # 关键一步，调用了macro_action.action_micro计算出选择的action和其他参数。
@@ -200,7 +200,6 @@ class A3C:
                 else:
                     action_args.append([0])  # TODO: Be careful
                 action = [actions.FunctionCall(action_id, action_args)]
-                print("action_args", action_args)
 
         # 校验宏动作：
         flag_success = True
@@ -262,7 +261,7 @@ class A3C:
         non_spatial_mask = np.zeros([len(buffer), self.action_num], dtype=np.float32)
         non_spatial_choose = np.zeros([len(buffer), self.action_num], dtype=np.float32)
 
-        for i, [state, action_id, action_args, next_state, reward] in enumerate(buffer):
+        for i, [state, macro_id, action_id, action_args, reward, next_state] in enumerate(buffer):
             # 求解每个step的minimap、screen、info（已去除）、reward
             minimap = preprocess_minimap(state.observation['feature_minimap'])
             screen = preprocess_screen(state.observation['feature_screen'])
@@ -273,14 +272,13 @@ class A3C:
             # valid_actions = state.observation["available_actions"]
             valid_actions = [0, 1, 2, 3, 4, 5]
             non_spatial_mask[i, valid_actions] = 1  # 可用命令列表
-            non_spatial_choose[i, action_id] = 1
-            # TODO: macro_action的处理语句
+            non_spatial_choose[i, macro_id] = 1
 
             args = actions.FUNCTIONS[action_id].args  # TODO 这部分具体意义待测试
             for arg, act_arg in zip(args, action_args):
                 # act_arg就是spatial的坐标
                 if arg.name in ('screen', 'minimap', 'screen2'):
-                    ind = act_arg[1] * 64 + act_arg[0]
+                    ind = act_arg[0] * 64 + act_arg[1]  # 注意坐标的顺序
                     spatial_mask[i] = 1  # 是否需要spatial
                     spatial_choose[i, ind] = 1
 
@@ -313,7 +311,17 @@ class A3C:
         self.sess.run(self.train_op, feed_dict=feed)
 
         if sum(rewards) > 2:
-            print(epoch)
+            print("good_episode: ", epoch)
+
+
+    def save_model(self, path, count):
+        # GL.set_saving(True)
+        self.saver.save(self.sess, path + '/model.ckpt', count)
+
+    def load_model(self, path):
+        ckpt = tf.train.get_checkpoint_state(path)
+        self.saver.restore(self.sess, ckpt.model_checkpoint_path)
+        return int(ckpt.model_checkpoint_path.split('-')[-1])
 
 
 def build_env(map_name):
@@ -327,15 +335,16 @@ def build_env(map_name):
     return env
 
 
-def run(agent, max_epoch, map_name, thread_index):
+def run(agent, max_epoch, map_name, thread_index, flags, snapshot_path):
     env = build_env(map_name)
     buffer = []
+    thread_index_all = flags.parallel
+    max_step = flags.max_agent_steps
 
-    for epoch in range(max_epoch):
+    for episode in range(max_epoch):
         # episode
-        state = env.reset()[0]
+        state = env.reset()[0]    # timesteps[0]
         counter = 0  # step_counter
-        max_step = 4000
         GL.episode_init(thread_index)
         while True:
             # step
@@ -343,25 +352,60 @@ def run(agent, max_epoch, map_name, thread_index):
             GL.set_value(thread_index, "num_steps", counter)
             action_id, action_args, next_state, flag_success, location, macro_id, macro_type, coord_type = agent.step(state, env,
                                                                                                           thread_index)
-            # next_state = env.step([actions.FunctionCall(action_id, action_args)])[0]
             reward = a3c_reward(thread_index, next_state, state, flag_success, location, macro_id, macro_type,
                                 coord_type)
-            buffer.append([state, action_id, action_args, next_state, reward])
+            buffer.append([state, macro_id, action_id, action_args, reward, next_state])
 
             if counter % 200 == 0:
-                agent.update(buffer, epoch, thread_index)  # TODO 是否加入lr衰减
+                agent.update(buffer, episode, thread_index)  # TODO 是否加入lr衰减
                 buffer = []
 
             if counter >= max_step or next_state.last():  # TODO buffer学习的判断具体设置（num_frames >= max_frames）
+                agent.update(buffer, episode, thread_index)  # TODO 是否加入lr衰减
+                buffer = []
+                state = next_state
                 break
 
             state = next_state
+        # 存储episode数据
+        iswin = state.reward
+        score = state.observation["score_cumulative"][0]
+        print("Episode_counter: ", episode)
+        print("state.reward_isWin: ", iswin)
+        print('Episode score:  ', score)
+        GL.add_value_list(thread_index, "victory_or_defeat", iswin)
+        # GL.add_value_list(thread_index, "reward_high_list",
+        #                   GL.get_value(thread_index, "sum_high_reward") / counter)
+        # TODO: 增加reward的记录
+        GL.add_value_list(thread_index, "episode_score_list", score)
+        # 存储全episode的累积数据
+        GL.add_value_list(thread_index_all, "victory_or_defeat", iswin)
+        GL.add_value_list(thread_index_all, "episode_score_list", score)
+        # global_episode是FLAGS.snapshot_step的倍数+1，或指定回合数
+        # 存单个episode的reward变化，存储网络参数（tf.train.Saver().save(),见a3c_agent），存全局numpy以备急停
+        if (episode % flags.snapshot_step == 1) or (episode in flags.quicksave_step_list):
+            agent.save_model(snapshot_path, episode)
+            for i in range(flags.parallel):
+                np.save("./DataForAnalysis/victory_or_defeat_thread" + str(i) + "episode" + str(
+                    episode) + ".npy",
+                        GL.get_value(i, "victory_or_defeat"))
+                np.save("./DataForAnalysis/episode_score_list_thread" + str(i) + "episode" + str(
+                    episode) + ".npy",
+                        GL.get_value(i, "episode_score_list"))
+            # 存储全episode的累积数据
+            np.save("./DataForAnalysis/victory_or_defeat_thread" + str(thread_index_all) + "episode" + str(
+                counter) + ".npy", GL.get_value(thread_index_all, "victory_or_defeat"))
+            np.save("./DataForAnalysis/episode_score_list_thread" + str(thread_index_all) + "episode" + str(
+                counter) + ".npy", GL.get_value(thread_index_all, "episode_score_list"))
 
     env.close()
 
 
-def run_a3c(max_epoch, map_name, parallel):
+def run_a3c(max_epoch, map_name, parallel, flags, snapshot_path):
     sess = tf.Session(config=config)
+    stopwatch.sw.enabled = flags.profile or flags.trace  # 应该是开启类似计时时钟这样的观测量
+    stopwatch.sw.trace = flags.trace
+    maps.get(flags.map)  # Assert the map exists.
 
     agents = []
     for i in range(parallel):
@@ -372,7 +416,7 @@ def run_a3c(max_epoch, map_name, parallel):
 
     threads = []
     for i in range(parallel):
-        t = threading.Thread(target=run, args=(agents[i], max_epoch, map_name, i))
+        t = threading.Thread(target=run, args=(agents[i], max_epoch, map_name, i, flags, snapshot_path))
         threads.append(t)
         t.daemon = True
         t.start()

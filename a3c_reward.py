@@ -159,9 +159,6 @@ def a3c_reward(ind_thread, next_obs, obs, micro_isdone, coordinate, macro_id, ma
             if build_score_change == 150:
                 reward += 500
     
-            if reward != 0:
-                print("build_barrack_reward: %.4f" % reward)
-    
         # 坐标类型为minimap
         if coord_type == 1:
             # 对己方操作
@@ -182,9 +179,7 @@ def a3c_reward(ind_thread, next_obs, obs, micro_isdone, coordinate, macro_id, ma
                 # 军队数量奖惩   yxy
                 if army_change > 0:
                     reward += 500
-                if reward != 0:
-                    print("Low_reward_def is %.4f" % reward)
-    
+
             # 对敌方操作
             if macro_type == 1:
                 dis_atk = math.sqrt((coordinate[0] - enemy[0]) ** 2 + (coordinate[1] - enemy[1]) ** 2)
@@ -198,10 +193,7 @@ def a3c_reward(ind_thread, next_obs, obs, micro_isdone, coordinate, macro_id, ma
                     reward += 10 * killed_score_units_change
                 if killed_score_structures_change > 0:
                     reward += 10 * killed_score_structures_change
-    
-                if reward != 0:
-                    print("Low_reward_atk is %.4f" % reward)
-    
+
         # 坐标类型为screen
         else:
             # 对己方操作
@@ -228,10 +220,7 @@ def a3c_reward(ind_thread, next_obs, obs, micro_isdone, coordinate, macro_id, ma
                     reward += killed_score_units_change
                 if killed_score_structures_change > 0:
                     reward += killed_score_structures_change
-    
-                if reward != 0:
-                    print("Low_reward_scr is %.4f" % reward)
-    
+
             # 对敌方操作
             if macro_type == 1:
                 print("Low_screen to enemy_empty")
@@ -243,5 +232,5 @@ def a3c_reward(ind_thread, next_obs, obs, micro_isdone, coordinate, macro_id, ma
     if reward <= -1.0:
         reward = -1.0
 
-    # print("Thread%d high_reward is %.4f" % (ind_thread, reward))
+    print("Thread%d reward is %.4f" % (ind_thread, reward))
     return reward

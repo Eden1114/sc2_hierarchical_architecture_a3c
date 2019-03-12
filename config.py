@@ -25,7 +25,8 @@ def config_init():
     flags.DEFINE_integer("step_mul", 8, "Game steps per agent step.")  # APM参数，step_mul为8相当于APM180左右
     flags.DEFINE_string("agent", "a3c_agent.A3CAgent", "Which agent to run.")
     # flags.DEFINE_string("net", "fcn", "atari or fcn.")
-    flags.DEFINE_string("net", "hierarchical", "network architecture for logging")
+    # flags.DEFINE_string("net", "hierarchical", "network architecture for logging")
+    flags.DEFINE_string("net", "a3c_naked", "network architecture for logging")
     flags.DEFINE_string("agent_race", 'terran', "Agent's race.")
     # 2018/08/03: Simple64枪兵互拼新加代码
     flags.DEFINE_string("agent2", "Bot", "Second agent, either Bot or agent class.")
