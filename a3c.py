@@ -166,7 +166,7 @@ class A3C:
             noise = np.random.randint(-4, 5)
             location[0] = int(max(0, min(64 - 1, location[0] + noise)))
             location[1] = int(max(0, min(64 - 1, location[1] + noise)))
-        location.reverse()    # 后面再用的时候，顺序就对了，注意
+        location.reverse()  # 后面再用的时候，顺序就对了，注意
 
         action_args = []
         ind_last = GL.get_value(thread_index, "ind_micro")
@@ -183,7 +183,7 @@ class A3C:
 
         macro_id = GL.get_value(thread_index, "dir_high")  # non_spatial_action
         action, call_spatial, action_id, macro_type, coord_type = action_micro(thread_index, macro_id,
-                                                                            ind_todo)
+                                                                               ind_todo)
         # 关键一步，调用了macro_action.action_micro计算出选择的action和其他参数。
         # 如果call_spatial为False，则act_id没用了，直接使用上行中的action
         # 如果其为True，则进入以下的模块，action没用了，act_id被使用来计算新的action
@@ -313,7 +313,6 @@ class A3C:
         if sum(rewards) > 2:
             print("good_episode: ", epoch)
 
-
     def save_model(self, path, count):
         # GL.set_saving(True)
         self.saver.save(self.sess, path + '/model.ckpt', count)
@@ -343,15 +342,17 @@ def run(agent, max_epoch, map_name, thread_index, flags, snapshot_path):
 
     for episode in range(max_epoch):
         # episode
-        state = env.reset()[0]    # timesteps[0]
+        episode = GL.get_episode_counter()
+        state = env.reset()[0]  # timesteps[0]
         counter = 0  # step_counter
         GL.episode_init(thread_index)
         while True:
             # step
             counter += 1
             GL.set_value(thread_index, "num_steps", counter)
-            action_id, action_args, next_state, flag_success, location, macro_id, macro_type, coord_type = agent.step(state, env,
-                                                                                                          thread_index)
+            action_id, action_args, next_state, flag_success, location, macro_id, macro_type, coord_type = agent.step(
+                state, env,
+                thread_index)
             reward = a3c_reward(thread_index, next_state, state, flag_success, location, macro_id, macro_type,
                                 coord_type)
             buffer.append([state, macro_id, action_id, action_args, reward, next_state])
@@ -360,14 +361,17 @@ def run(agent, max_epoch, map_name, thread_index, flags, snapshot_path):
                 agent.update(buffer, episode, thread_index)  # TODO 是否加入lr衰减
                 buffer = []
 
-            if counter >= max_step or next_state.last():  # TODO buffer学习的判断具体设置（num_frames >= max_frames）
+            if counter >= max_step or next_state.last():  # 最终状态
                 agent.update(buffer, episode, thread_index)  # TODO 是否加入lr衰减
                 buffer = []
-                state = next_state
-                break
-
+                state = next_state  # 获取终末state
+                with threading.Lock():  # 线程锁，为了读写安全
+                    episode = GL.get_episode_counter()
+                    episode += 1
+                    GL.set_episode_counter(episode)
+                break  # 结束本episode的运行，继续执行后续的存储语句
             state = next_state
-        # 存储episode数据
+            # 存储episode数据
         iswin = state.reward
         score = state.observation["score_cumulative"][0]
         print("Episode_counter: ", episode)
