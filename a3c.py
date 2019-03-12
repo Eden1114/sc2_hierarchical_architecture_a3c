@@ -310,7 +310,7 @@ class A3C:
                 self.non_spatial_choose: non_spatial_choose}
         self.sess.run(self.train_op, feed_dict=feed)
 
-        if sum(rewards) > 2:
+        if sum(rewards) > 2:    # TODO: 资格迹，优先经验重放
             print("good_episode: ", epoch)
 
     def save_model(self, path, count):
