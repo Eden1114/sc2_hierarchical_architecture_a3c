@@ -2,7 +2,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 import math
-import globalvar as gl
+import globalvar as GL
 
 
 def a3c_reward(ind_thread, next_obs, obs, micro_isdone, coordinate, macro_id, macro_type, coord_type):
@@ -17,7 +17,7 @@ def a3c_reward(ind_thread, next_obs, obs, micro_isdone, coordinate, macro_id, ma
     army_change = next_obs.observation["player"][5] - obs.observation["player"][5]  # 军队变化
     worker_change = next_obs.observation["player"][6] - obs.observation["player"][6]  # 农民变化
     food_remain = next_obs.observation["player"][4] - next_obs.observation["player"][3]  # 剩余人口
-    step = gl.get_value(ind_thread, "num_steps")  # 当前的步数，1秒2.8步，50步约为18s
+    step = GL.get_value(ind_thread, "num_steps")  # 当前的步数，1秒2.8步，50步约为18s
     # 坐标x方向向右为正，y方向向下为正，左上角是[0, 0]
     base = [20, 25]  # minimap
     enemy = [44, 39]  # minimap
@@ -32,7 +32,7 @@ def a3c_reward(ind_thread, next_obs, obs, micro_isdone, coordinate, macro_id, ma
     killed_score_structures_change = 10 * (
             next_obs.observation["score_cumulative"][6] - obs.observation["score_cumulative"][6])
     army_change = next_obs.observation["player"][5] - obs.observation["player"][5]  # 军队变化
-    dir_high = gl.get_value(ind_thread, "dir_high")
+    dir_high = GL.get_value(ind_thread, "dir_high")
     # ind_todo = gl.get_value(ind_thread, "ind_micro")
     # 190125改写各项系数，yxy
 
@@ -80,21 +80,21 @@ def a3c_reward(ind_thread, next_obs, obs, micro_isdone, coordinate, macro_id, ma
 
     # 建造得分计算，补给站是100，兵营是150，指挥中心是400
     # 补给站数目
-    supply_num = gl.get_value(ind_thread, "supply_num")
+    supply_num = GL.get_value(ind_thread, "supply_num")
     if build_score_change == 100:
         supply_num += 1
-        gl.set_value(ind_thread, "supply_num", supply_num)
+        GL.set_value(ind_thread, "supply_num", supply_num)
     if build_score_change == -100:
         supply_num -= 1
-        gl.set_value(ind_thread, "supply_num", supply_num)
+        GL.set_value(ind_thread, "supply_num", supply_num)
     # 兵营数目
-    barrack_num = gl.get_value(ind_thread, "barrack_num")
+    barrack_num = GL.get_value(ind_thread, "barrack_num")
     if build_score_change == 150:
         barrack_num += 1
-        gl.set_value(ind_thread, "barrack_num", barrack_num)
+        GL.set_value(ind_thread, "barrack_num", barrack_num)
     if build_score_change == -150:
         barrack_num -= 1
-        gl.set_value(ind_thread, "barrack_num", barrack_num)
+        GL.set_value(ind_thread, "barrack_num", barrack_num)
 
     if step >= 300 and supply_num == 0:
         reward -= 500

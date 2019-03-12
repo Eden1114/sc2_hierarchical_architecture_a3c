@@ -431,6 +431,12 @@ def run_a3c(max_epoch, map_name, parallel, flags, snapshot_path):
         agents.append(agent)
 
     sess.run(tf.global_variables_initializer())
+    # 模型读取
+    if not flags.training or flags.continuation:  # 若不是训练模式 或 若是持续性训练，则利用原有数据（训练好的参数，存在了snapshot文件夹里）进行训练
+        COUNTER = agent.load_model(snapshot_path)
+        GL.set_episode_counter(COUNTER)
+        print("Parameter loaded, global_episode_counter = ", COUNTER)
+        # 全局变量COUNTER记录的是当前所有线程加在一起，总共完成的回合数
 
     threads = []
     for i in range(parallel):
