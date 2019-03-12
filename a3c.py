@@ -355,8 +355,12 @@ def run(agent, max_epoch, map_name, thread_index, flags, snapshot_path):
                 thread_index)
             reward = a3c_reward(thread_index, next_state, state, flag_success, location, macro_id, macro_type,
                                 coord_type)
-            buffer.append([state, macro_id, action_id, action_args, reward, next_state])
+            sum_reward = GL.get_value(thread_index, "sum_reward")
+            sum_reward += reward
+            GL.set_value(thread_index, "sum_reward", sum_reward)
+            GL.add_value_list(thread_index, "reward_of_episode", reward)
 
+            buffer.append([state, macro_id, action_id, action_args, reward, next_state])
             if counter % 200 == 0:
                 agent.update(buffer, episode, thread_index)  # TODO 是否加入lr衰减
                 buffer = []
@@ -371,38 +375,48 @@ def run(agent, max_epoch, map_name, thread_index, flags, snapshot_path):
                     GL.set_episode_counter(episode)
                 break  # 结束本episode的运行，继续执行后续的存储语句
             state = next_state
-            # 存储episode数据
-        iswin = state.reward
-        score = state.observation["score_cumulative"][0]
-        print("Episode_counter: ", episode)
-        print("state.reward_isWin: ", iswin)
-        print('Episode score:  ', score)
-        GL.add_value_list(thread_index, "victory_or_defeat", iswin)
-        # GL.add_value_list(thread_index, "reward_high_list",
-        #                   GL.get_value(thread_index, "sum_high_reward") / counter)
-        # TODO: 增加reward的记录
-        GL.add_value_list(thread_index, "episode_score_list", score)
-        # 存储全episode的累积数据
-        GL.add_value_list(thread_index_all, "victory_or_defeat", iswin)
-        GL.add_value_list(thread_index_all, "episode_score_list", score)
-        # global_episode是FLAGS.snapshot_step的倍数+1，或指定回合数
-        # 存单个episode的reward变化，存储网络参数（tf.train.Saver().save(),见a3c_agent），存全局numpy以备急停
-        if (episode % flags.snapshot_step == 1) or (episode in flags.quicksave_step_list):
-            agent.save_model(snapshot_path, episode)
-            for i in range(flags.parallel):
-                np.save("./DataForAnalysis/victory_or_defeat_thread" + str(i) + "episode" + str(
-                    episode) + ".npy",
-                        GL.get_value(i, "victory_or_defeat"))
-                np.save("./DataForAnalysis/episode_score_list_thread" + str(i) + "episode" + str(
-                    episode) + ".npy",
-                        GL.get_value(i, "episode_score_list"))
-            # 存储全episode的累积数据
-            np.save("./DataForAnalysis/victory_or_defeat_thread" + str(thread_index_all) + "episode" + str(
-                counter) + ".npy", GL.get_value(thread_index_all, "victory_or_defeat"))
-            np.save("./DataForAnalysis/episode_score_list_thread" + str(thread_index_all) + "episode" + str(
-                counter) + ".npy", GL.get_value(thread_index_all, "episode_score_list"))
+
+        # 存储episode数据
+        episode_log(state, episode, thread_index, counter, thread_index_all, flags, snapshot_path, agent)
 
     env.close()
+
+
+def episode_log(state, episode, thread_index, num_step, thread_index_all, flags, snapshot_path, agent):
+    iswin = state.reward
+    score = state.observation["score_cumulative"][0]
+    print("Episode_counter: ", episode)
+    print("state.reward_isWin: ", iswin)
+    print('Episode score:  ', score)
+    GL.add_value_list(thread_index, "victory_or_defeat", iswin)
+    episode_reward_average = GL.get_value(thread_index, "sum_reward") / num_step
+    GL.add_value_list(thread_index, "reward_list", episode_reward_average)
+    GL.add_value_list(thread_index, "episode_score_list", score)
+    # 存储全episode的累积数据
+    GL.add_value_list(thread_index_all, "victory_or_defeat", iswin)
+    GL.add_value_list(thread_index_all, "episode_score_list", score)
+    # global_episode是FLAGS.snapshot_step的倍数+1，或指定回合数
+    # 存单个episode的reward变化，存储网络参数（tf.train.Saver().save(),见a3c_agent），存全局numpy以备急停
+    if (episode % flags.snapshot_step == 1) or (episode in flags.quicksave_step_list):
+        agent.save_model(snapshot_path, episode)
+        for i in range(flags.parallel):
+            np.save(
+                "./DataForAnalysis/reward_of_episode_" + str(episode) + "thread_" + str(i) + ".npy",
+                GL.get_value(i, "reward_of_episode"))
+            np.save(
+                "./DataForAnalysis/reward_list_thread_" + str(i) + "episode_" + str(episode) + ".npy",
+                GL.get_value(i, "reward_list"))
+            np.save("./DataForAnalysis/victory_or_defeat_thread" + str(i) + "episode" + str(
+                episode) + ".npy",
+                    GL.get_value(i, "victory_or_defeat"))
+            np.save("./DataForAnalysis/episode_score_list_thread" + str(i) + "episode" + str(
+                episode) + ".npy",
+                    GL.get_value(i, "episode_score_list"))
+        # 存储全episode的累积数据
+        np.save("./DataForAnalysis/victory_or_defeat_thread" + str(thread_index_all) + "episode" + str(
+            episode) + ".npy", GL.get_value(thread_index_all, "victory_or_defeat"))
+        np.save("./DataForAnalysis/episode_score_list_thread" + str(thread_index_all) + "episode" + str(
+            episode) + ".npy", GL.get_value(thread_index_all, "episode_score_list"))
 
 
 def run_a3c(max_epoch, map_name, parallel, flags, snapshot_path):

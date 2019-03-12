@@ -129,7 +129,7 @@ def a3c_reward(ind_thread, next_obs, obs, micro_isdone, coordinate, macro_id, ma
         reward -= 100
         # ！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
         # last_actions为[],代表动作函数合法但失败（比如造补给站在available_action_list里，但选的建造坐标在基地的位置上，则造不出来）
-    if coordinate[0] != -99 and coordinate[1] != -99:    # 调用了spatial
+    if coordinate[0] != -99 and coordinate[1] != -99:  # 调用了spatial
         # 针对宏动作设计精准奖励
         # build_supply
         if macro_id == 1:
@@ -141,10 +141,10 @@ def a3c_reward(ind_thread, next_obs, obs, micro_isdone, coordinate, macro_id, ma
                 reward = 0
             else:
                 reward -= dis * 100
-    
+
             if build_score_change == 100:
                 reward += 300
-    
+
         # build_barrack
         if macro_id == 2:
             dis = math.sqrt((coordinate[0] - barrack[0]) ** 2 + (coordinate[1] - barrack[1]) ** 2)
@@ -155,10 +155,10 @@ def a3c_reward(ind_thread, next_obs, obs, micro_isdone, coordinate, macro_id, ma
                 reward = 0
             else:
                 reward += 100 - dis * 10
-    
+
             if build_score_change == 150:
                 reward += 500
-    
+
         # 坐标类型为minimap
         if coord_type == 1:
             # 对己方操作
@@ -169,13 +169,13 @@ def a3c_reward(ind_thread, next_obs, obs, micro_isdone, coordinate, macro_id, ma
                     reward += 100 - dis * 2
                 else:
                     reward += 100 - dis * 10
-    
+
                 if build_score_change > 0:
                     if build_score_change == 150:
                         reward += 100
                     elif build_score_change == 100:
                         reward += 50
-    
+
                 # 军队数量奖惩   yxy
                 if army_change > 0:
                     reward += 500
@@ -185,10 +185,11 @@ def a3c_reward(ind_thread, next_obs, obs, micro_isdone, coordinate, macro_id, ma
                 dis_atk = math.sqrt((coordinate[0] - enemy[0]) ** 2 + (coordinate[1] - enemy[1]) ** 2)
                 dis_atk_2 = math.sqrt((coordinate[0] - enemy_2[0]) ** 2 + (coordinate[1] - enemy_2[1]) ** 2)
                 dis_def = math.sqrt((coordinate[0] - defense[0]) ** 2 + (coordinate[1] - defense[1]) ** 2)
-                dis_def_base = math.sqrt((coordinate[0] - defense_base[0]) ** 2 + (coordinate[1] - defense_base[1]) ** 2)
+                dis_def_base = math.sqrt(
+                    (coordinate[0] - defense_base[0]) ** 2 + (coordinate[1] - defense_base[1]) ** 2)
                 dis = min(dis_atk, dis_atk_2, dis_def, dis_def_base)
                 reward += 200 - dis * 5
-    
+
                 if killed_score_units_change > 0:
                     reward += 10 * killed_score_units_change
                 if killed_score_structures_change > 0:
@@ -206,7 +207,7 @@ def a3c_reward(ind_thread, next_obs, obs, micro_isdone, coordinate, macro_id, ma
                     reward = 0
                 else:
                     reward += 100 - dis * 10
-    
+
                 if build_score_change > 0:
                     if build_score_change == 150:
                         reward += 100
@@ -215,7 +216,7 @@ def a3c_reward(ind_thread, next_obs, obs, micro_isdone, coordinate, macro_id, ma
                 # 军队数量奖惩   yxy
                 if army_change > 0:
                     reward += 500
-    
+
                 if killed_score_units_change > 0:
                     reward += killed_score_units_change
                 if killed_score_structures_change > 0:
@@ -232,5 +233,7 @@ def a3c_reward(ind_thread, next_obs, obs, micro_isdone, coordinate, macro_id, ma
     if reward <= -1.0:
         reward = -1.0
 
-    print("Thread%d reward is %.4f" % (ind_thread, reward))
+    if reward > 0.5:
+        print("Thread%d reward is %.4f" % (ind_thread, reward))
+
     return reward
