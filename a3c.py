@@ -191,8 +191,6 @@ class A3C:
             GL.set_value(thread_index, "act_id_micro", ind_todo)
             if macro_id == 2 and ind_todo == 3:  # 代表当前要执行的动作是宏动作“build_barrack”中的序号3微动作：造兵营（动作函数42）
                 GL.set_value(thread_index, "barrack_location_NotSure", [location[0], location[1]])
-                print("Thread ", thread_index, end=" ")
-                print("Barrack_location_NotSure: ", [location[0], location[1]])
             # action_args = []
             for arg in actions.FUNCTIONS[action_id].args:  # actions是pysc2.lib中的文件 根据act_id获取其可使用的参数，并添加到args中去
                 if arg.name in ('screen', 'minimap', 'screen2'):
@@ -366,6 +364,8 @@ def run(agent, max_epoch, map_name, thread_index, flags, snapshot_path):
                 buffer = []
 
             if counter >= max_step or next_state.last():  # 最终状态
+                print("len(buffer): ", len(buffer), end=" ")
+                print("buffer.sizeof: ", buffer.__sizeof__())
                 agent.update(buffer, episode, thread_index)  # TODO 是否加入lr衰减
                 buffer = []
                 state = next_state  # 获取终末state
