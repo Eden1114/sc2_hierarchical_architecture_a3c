@@ -364,7 +364,7 @@ def run(agent, max_epoch, map_name, thread_index, flags, snapshot_path):
                 buffer = []
 
             if counter > max_step or next_state.last():  # 最终状态
-                if buffer is not None:
+                if len(buffer) > 0:
                     agent.update(buffer, episode, thread_index)  # TODO 是否加入lr衰减
                 buffer = []
                 state = next_state  # 获取终末state
