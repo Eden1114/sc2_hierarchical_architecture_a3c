@@ -377,8 +377,9 @@ def run(agent, max_epoch, map_name, thread_index, flags, snapshot_path):
 
         # 存储episode数据
         episode_log(state, episode, thread_index, counter, thread_index_all, flags, snapshot_path, agent)
-
-    env.close()
+        if episode > max_epoch:
+            env.close()
+        break
 
 
 def episode_log(state, episode, thread_index, num_step, thread_index_all, flags, snapshot_path, agent):
