@@ -310,7 +310,7 @@ class A3C:
                 self.non_spatial_choose: non_spatial_choose}
         self.sess.run(self.train_op, feed_dict=feed)
 
-        if sum(rewards) > 2:    # TODO: 资格迹，优先经验重放
+        if sum(rewards) > 2:  # TODO: 资格迹，优先经验重放
             print("good_episode: ", epoch)
 
     def save_model(self, path, count):
@@ -343,7 +343,7 @@ def run(agent, max_epoch, map_name, thread_index, flags, snapshot_path):
     for episode in range(max_epoch):
         # episode
         episode = GL.get_episode_counter()
-        state = env.reset()[0]  # timesteps[0]
+        state = env.reset()[0]  # ==timesteps[0]
         counter = 0  # step_counter
         GL.episode_init(thread_index)
         while True:
@@ -361,7 +361,7 @@ def run(agent, max_epoch, map_name, thread_index, flags, snapshot_path):
             GL.add_value_list(thread_index, "reward_of_episode", reward)
 
             buffer.append([state, macro_id, action_id, action_args, reward, next_state])
-            if counter % 200 == 0:
+            if counter % 200 == 1:    # max_step是10的倍数，不能和此处的同余，否则就会把清空的buffer传进去update
                 agent.update(buffer, episode, thread_index)  # TODO 是否加入lr衰减
                 buffer = []
 
