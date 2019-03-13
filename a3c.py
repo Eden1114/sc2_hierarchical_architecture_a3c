@@ -385,6 +385,7 @@ def run(agent, max_epoch, map_name, thread_index, flags, snapshot_path):
 def episode_log(state, episode, thread_index, num_step, thread_index_all, flags, snapshot_path, agent):
     iswin = state.reward
     score = state.observation["score_cumulative"][0]
+    print("=====" * 10)
     print("Episode_counter: ", episode)
     print("state.reward_isWin: ", iswin)
     print('Episode score:  ', score)
