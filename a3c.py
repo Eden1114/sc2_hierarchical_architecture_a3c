@@ -400,21 +400,21 @@ def episode_log(state, episode, thread_index, num_step, thread_index_all, flags,
         agent.save_model(snapshot_path, episode)
         for i in range(flags.parallel):
             np.save(
-                "./DataForAnalysis/reward_of_episode_" + str(episode) + "thread_" + str(i) + ".npy",
+                "./DataForAnalysis/reward_of_episode_" + str(episode) + "_thread_" + str(i) + ".npy",
                 GL.get_value(i, "reward_of_episode"))
             np.save(
-                "./DataForAnalysis/reward_list_thread_" + str(i) + "episode_" + str(episode) + ".npy",
+                "./DataForAnalysis/reward_list_thread_" + str(i) + "_episode_" + str(episode) + ".npy",
                 GL.get_value(i, "reward_list"))
-            np.save("./DataForAnalysis/victory_or_defeat_thread_" + str(i) + "episode_" + str(
+            np.save("./DataForAnalysis/victory_or_defeat_thread_" + str(i) + "_episode_" + str(
                 episode) + ".npy",
                     GL.get_value(i, "victory_or_defeat"))
-            np.save("./DataForAnalysis/episode_score_list_thread_" + str(i) + "episode_" + str(
+            np.save("./DataForAnalysis/episode_score_list_thread_" + str(i) + "_episode_" + str(
                 episode) + ".npy",
                     GL.get_value(i, "episode_score_list"))
         # 存储全episode的累积数据
-        np.save("./DataForAnalysis/victory_or_defeat_thread_" + str(thread_index_all) + "episode_" + str(
+        np.save("./DataForAnalysis/victory_or_defeat_thread_" + str(thread_index_all) + "_episode_" + str(
             episode) + ".npy", GL.get_value(thread_index_all, "victory_or_defeat"))
-        np.save("./DataForAnalysis/episode_score_list_thread_" + str(thread_index_all) + "episode_" + str(
+        np.save("./DataForAnalysis/episode_score_list_thread_" + str(thread_index_all) + "_episode_" + str(
             episode) + ".npy", GL.get_value(thread_index_all, "episode_score_list"))
 
 
