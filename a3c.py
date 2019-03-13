@@ -412,9 +412,9 @@ def episode_log(state, episode, thread_index, num_step, thread_index_all, flags,
                 episode) + ".npy",
                     GL.get_value(i, "episode_score_list"))
         # 存储全episode的累积数据
-        np.save("./DataForAnalysis/victory_or_defeat_thread" + str(thread_index_all) + "episode" + str(
+        np.save("./DataForAnalysis/victory_or_defeat_thread_" + str(thread_index_all) + "episode_" + str(
             episode) + ".npy", GL.get_value(thread_index_all, "victory_or_defeat"))
-        np.save("./DataForAnalysis/episode_score_list_thread" + str(thread_index_all) + "episode" + str(
+        np.save("./DataForAnalysis/episode_score_list_thread_" + str(thread_index_all) + "episode_" + str(
             episode) + ".npy", GL.get_value(thread_index_all, "episode_score_list"))
 
 
