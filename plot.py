@@ -36,14 +36,14 @@ Python-Matplotlib 9 颜色和样式
 　　　　kp-
 """
 
-tmp0 = np.load('./DataForAnalysis/victory_or_defeat_thread0.npy')
-tmp1 = np.load('./DataForAnalysis/victory_or_defeat_thread1.npy')
-tmp2 = np.load('./DataForAnalysis/victory_or_defeat_thread2.npy')
-tmp3 = np.load('./DataForAnalysis/victory_or_defeat_thread3.npy')
-# tmp0 = np.load('./DataForAnalysis/victory_or_defeat_thread0episode201.npy')
-# tmp1 = np.load('./DataForAnalysis/victory_or_defeat_thread1episode201.npy')
-# tmp2 = np.load('./DataForAnalysis/victory_or_defeat_thread2episode201.npy')
-# tmp3 = np.load('./DataForAnalysis/victory_or_defeat_thread3episode201.npy')
+# tmp0 = np.load('./DataForAnalysis/victory_or_defeat_thread0.npy')
+# tmp1 = np.load('./DataForAnalysis/victory_or_defeat_thread1.npy')
+# tmp2 = np.load('./DataForAnalysis/victory_or_defeat_thread2.npy')
+# tmp3 = np.load('./DataForAnalysis/victory_or_defeat_thread3.npy')
+tmp0 = np.load('./DataForAnalysis/victory_or_defeat_thread0episode1401.npy')
+tmp1 = np.load('./DataForAnalysis/victory_or_defeat_thread1episode1401.npy')
+tmp2 = np.load('./DataForAnalysis/victory_or_defeat_thread2episode1401.npy')
+tmp3 = np.load('./DataForAnalysis/victory_or_defeat_thread3episode1401.npy')
 # tmp4 = np.load('./DataForAnalysis/victory_or_defeat_thread4.npy')
 # tmp5 = np.load('./DataForAnalysis/victory_or_defeat_thread5.npy')
 # tmp6 = np.load('./DataForAnalysis/victory_or_defeat_thread6.npy')
