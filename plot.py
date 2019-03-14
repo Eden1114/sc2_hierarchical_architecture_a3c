@@ -36,10 +36,10 @@ Python-Matplotlib 9 颜色和样式
 　　　　kp-
 """
 
-# tmp0 = np.load('./DataForAnalysis/victory_or_defeat_thread_0.npy')
-# tmp1 = np.load('./DataForAnalysis/victory_or_defeat_thread_1.npy')
-# tmp2 = np.load('./DataForAnalysis/victory_or_defeat_thread_2.npy')
-# tmp3 = np.load('./DataForAnalysis/victory_or_defeat_thread_3.npy')
+tmp0 = np.load('./DataForAnalysis/victory_or_defeat_thread_0.npy')
+tmp1 = np.load('./DataForAnalysis/victory_or_defeat_thread_1.npy')
+tmp2 = np.load('./DataForAnalysis/victory_or_defeat_thread_2.npy')
+tmp3 = np.load('./DataForAnalysis/victory_or_defeat_thread_3.npy')
 # tmp0 = np.load('./DataForAnalysis/victory_or_defeat_thread0episode1401.npy')
 # tmp1 = np.load('./DataForAnalysis/victory_or_defeat_thread1episode1401.npy')
 # tmp2 = np.load('./DataForAnalysis/victory_or_defeat_thread2episode1401.npy')
@@ -85,7 +85,7 @@ Python-Matplotlib 9 颜色和样式
 # tmp3 = np.load('./DataForAnalysis/high_reward_of_episode151thread3.npy')
 # tmp4 = np.load('./DataForAnalysis/high_reward_of_episode151thread4.npy')
 
-tmp0 = np.load('./DataForAnalysis/victory_or_defeat_thread_4.npy')
+# tmp0 = np.load('./DataForAnalysis/victory_or_defeat_thread_4.npy')
 # tmp1 = np.load('./DataForAnalysis/reward_list_thread_4.npy')
 # tmp2 = np.load('./DataForAnalysis/episode_score_list_thread_4.npy')
 
@@ -99,9 +99,9 @@ print(len(tmp0))
 # print(tmp7)
 
 plt.plot(np.arange(len(tmp0)), tmp0, 'b-')
-# plt.plot(np.arange(len(tmp1)), tmp1, 'r-')
-# plt.plot(np.arange(len(tmp2)), tmp2, 'g-')
-# plt.plot(np.arange(len(tmp3)), tmp3, 'y-')
+plt.plot(np.arange(len(tmp1)), tmp1, 'r-')
+plt.plot(np.arange(len(tmp2)), tmp2, 'g-')
+plt.plot(np.arange(len(tmp3)), tmp3, 'y-')
 # plt.plot(np.arange(len(tmp4)), tmp4, 'm-')
 # plt.plot(np.arange(len(tmp3)), tmp3, 'r-')
 # plt.plot(np.arange(len(tmp50)), tmp50, 'g-')
