@@ -15,7 +15,7 @@ flags.DEFINE_string('f', '', 'kernel')
 flags.FLAGS(sys.argv)
 
 config_flags = config_init()
-max_epoch = config_flags.max_episodes
+max_episode = config_flags.max_episodes
 map_name = config_flags.map
 if config_flags.training:
     parallel = config_flags.parallel  # PARALLEL 指定开几个线程（几个游戏窗口在跑星际2）
@@ -37,7 +37,7 @@ if not os.path.exists(SNAPSHOT):
 if not os.path.exists(ANALYSIS):
     os.makedirs(ANALYSIS)
 
-run_a3c(max_epoch, map_name, parallel, config_flags, SNAPSHOT)
+run_a3c(max_episode, map_name, parallel, config_flags, SNAPSHOT)
 
 # 最终数据记录
 for i in range(parallel+1):

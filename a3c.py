@@ -234,7 +234,7 @@ class A3C:
 
         return action_id, action_args, next_state, flag_success, location, macro_id, macro_type, coord_type
 
-    def update(self, buffer, epoch, thread_index):
+    def update(self, buffer, episode, thread_index):
         last_state = buffer[-1][-1]
         if last_state.last():
             R = 0  # TODO R设置的具体意义？
@@ -309,7 +309,7 @@ class A3C:
         self.sess.run(self.train_op, feed_dict=feed)
 
         if sum(rewards) > 2:  # TODO: 资格迹，优先经验重放
-            print("good_episode: ", epoch)
+            print("good_episode: ", episode)
 
     def save_model(self, path, count):
         # GL.set_saving(True)
@@ -332,13 +332,13 @@ def build_env(map_name):
     return env
 
 
-def run(agent, max_epoch, map_name, thread_index, flags, snapshot_path):
+def run(agent, max_episode, map_name, thread_index, flags, snapshot_path):
     env = build_env(map_name)
     buffer = []
     thread_index_all = flags.parallel
     max_step = flags.max_agent_steps
 
-    for episode in range(max_epoch):
+    for episode in range(max_episode):
         # episode
         episode = GL.get_episode_counter()
         state = env.reset()[0]  # ==timesteps[0]
@@ -377,7 +377,7 @@ def run(agent, max_epoch, map_name, thread_index, flags, snapshot_path):
 
         # 存储episode数据
         episode_log(state, episode, thread_index, counter, thread_index_all, flags, snapshot_path, agent)
-        if episode > max_epoch:
+        if episode > max_episode:
             env.close()
             break
 
@@ -420,7 +420,7 @@ def episode_log(state, episode, thread_index, num_step, thread_index_all, flags,
             episode) + ".npy", GL.get_value(thread_index_all, "episode_score_list"))
 
 
-def run_a3c(max_epoch, map_name, parallel, flags, snapshot_path):
+def run_a3c(max_episode, map_name, parallel, flags, snapshot_path):
     sess = tf.Session(config=config)
     stopwatch.sw.enabled = flags.profile or flags.trace  # 应该是开启类似计时时钟这样的观测量
     stopwatch.sw.trace = flags.trace
@@ -441,7 +441,7 @@ def run_a3c(max_epoch, map_name, parallel, flags, snapshot_path):
 
     threads = []
     for i in range(parallel):
-        t = threading.Thread(target=run, args=(agents[i], max_epoch, map_name, i, flags, snapshot_path))
+        t = threading.Thread(target=run, args=(agents[i], max_episode, map_name, i, flags, snapshot_path))
         threads.append(t)
         t.daemon = True
         t.start()
