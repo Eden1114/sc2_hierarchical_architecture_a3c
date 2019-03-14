@@ -396,6 +396,7 @@ def episode_log(state, episode, thread_index, num_step, thread_index_all, flags,
     # 存储全episode的累积数据
     GL.add_value_list(thread_index_all, "victory_or_defeat", iswin)
     GL.add_value_list(thread_index_all, "episode_score_list", score)
+    GL.add_value_list(thread_index_all, "reward_list", episode_reward_average)
     # global_episode是FLAGS.snapshot_step的倍数+1，或指定回合数
     # 存单个episode的reward变化，存储网络参数（tf.train.Saver().save(),见a3c_agent），存全局numpy以备急停
     if (episode % flags.snapshot_step == 1) or (episode in flags.quicksave_step_list):
@@ -418,6 +419,8 @@ def episode_log(state, episode, thread_index, num_step, thread_index_all, flags,
             episode) + ".npy", GL.get_value(thread_index_all, "victory_or_defeat"))
         np.save("./DataForAnalysis/episode_score_list_thread_" + str(thread_index_all) + "_episode_" + str(
             episode) + ".npy", GL.get_value(thread_index_all, "episode_score_list"))
+        np.save("./DataForAnalysis/reward_list_thread_" + str(thread_index_all) + "_episode_" + str(
+            episode) + ".npy", GL.get_value(thread_index_all, "reward_list"))
 
 
 def run_a3c(max_episode, map_name, parallel, flags, snapshot_path):
