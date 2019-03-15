@@ -106,9 +106,9 @@ print(count / len(tmp0))
 
 
 
-# plt.plot(np.arange(len(tmp0)), tmp0, 'b-')
+plt.plot(np.arange(len(tmp0)), tmp0, 'b-')
 # plt.plot(np.arange(len(tmp1)), tmp1, 'r-')
-plt.plot(np.arange(len(tmp2)), tmp2, 'g-')
+# plt.plot(np.arange(len(tmp2)), tmp2, 'g-')
 # plt.plot(np.arange(len(tmp3)), tmp3, 'y-')
 # plt.plot(np.arange(len(tmp4)), tmp4, 'm-')
 # plt.plot(np.arange(len(tmp3)), tmp3, 'r-')
