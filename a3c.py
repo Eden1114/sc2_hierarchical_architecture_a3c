@@ -359,9 +359,12 @@ def run(agent, max_episode, map_name, thread_index, flags, snapshot_path):
             GL.add_value_list(thread_index, "reward_of_episode", reward)
 
             buffer.append([state, macro_id, action_id, action_args, reward, next_state])
-            if counter % 200 == 1:    # max_step是10的倍数，不能和此处的同余，否则就会把清空的buffer传进去update
+            if counter % 200 == 1:  # max_step是10的倍数，不能和此处的同余，否则就会把清空的buffer传进去update
                 agent.update(buffer, episode, thread_index)  # TODO 是否加入lr衰减
                 buffer = []
+
+            if counter > 3000:  # 人工的胜负条件判断
+                GL.set_value(thread_index, "iswin", True)
 
             if counter > max_step or next_state.last():  # 最终状态
                 if len(buffer) > 0:
@@ -385,16 +388,20 @@ def run(agent, max_episode, map_name, thread_index, flags, snapshot_path):
 def episode_log(state, episode, thread_index, num_step, thread_index_all, flags, snapshot_path, agent):
     iswin = state.reward
     score = state.observation["score_cumulative"][0]
+    iswin_self = GL.get_value(thread_index, "iswin")
     print("=====" * 10)
     print("Episode_counter: ", episode)
     print("state.reward_isWin: ", iswin)
+    print("self_isWin: ", iswin_self)
     print('Episode score:  ', score)
     GL.add_value_list(thread_index, "victory_or_defeat", iswin)
+    GL.add_value_list(thread_index, "victory_or_defeat_self", iswin_self)
     episode_reward_average = GL.get_value(thread_index, "sum_reward") / num_step
     GL.add_value_list(thread_index, "reward_list", episode_reward_average)
     GL.add_value_list(thread_index, "episode_score_list", score)
     # 存储全episode的累积数据
     GL.add_value_list(thread_index_all, "victory_or_defeat", iswin)
+    GL.add_value_list(thread_index_all, "victory_or_defeat_self", iswin_self)
     GL.add_value_list(thread_index_all, "episode_score_list", score)
     GL.add_value_list(thread_index_all, "reward_list", episode_reward_average)
     # global_episode是FLAGS.snapshot_step的倍数+1，或指定回合数
@@ -409,14 +416,16 @@ def episode_log(state, episode, thread_index, num_step, thread_index_all, flags,
                 "./DataForAnalysis/reward_list_thread_" + str(i) + "_episode_" + str(episode) + ".npy",
                 GL.get_value(i, "reward_list"))
             np.save("./DataForAnalysis/victory_or_defeat_thread_" + str(i) + "_episode_" + str(
-                episode) + ".npy",
-                    GL.get_value(i, "victory_or_defeat"))
+                episode) + ".npy", GL.get_value(i, "victory_or_defeat"))
+            np.save("./DataForAnalysis/victory_or_defeat_self_thread_" + str(i) + "_episode_" + str(
+                episode) + ".npy", GL.get_value(i, "victory_or_defeat_self"))
             np.save("./DataForAnalysis/episode_score_list_thread_" + str(i) + "_episode_" + str(
-                episode) + ".npy",
-                    GL.get_value(i, "episode_score_list"))
+                episode) + ".npy", GL.get_value(i, "episode_score_list"))
         # 存储全episode的累积数据
         np.save("./DataForAnalysis/victory_or_defeat_thread_" + str(thread_index_all) + "_episode_" + str(
             episode) + ".npy", GL.get_value(thread_index_all, "victory_or_defeat"))
+        np.save("./DataForAnalysis/victory_or_defeat_self_thread_" + str(thread_index_all) + "_episode_" + str(
+            episode) + ".npy", GL.get_value(thread_index_all, "victory_or_defeat_self"))
         np.save("./DataForAnalysis/episode_score_list_thread_" + str(thread_index_all) + "_episode_" + str(
             episode) + ".npy", GL.get_value(thread_index_all, "episode_score_list"))
         np.save("./DataForAnalysis/reward_list_thread_" + str(thread_index_all) + "_episode_" + str(
