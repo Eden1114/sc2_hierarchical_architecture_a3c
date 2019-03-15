@@ -36,10 +36,10 @@ Python-Matplotlib 9 颜色和样式
 　　　　kp-
 """
 
-# tmp0 = np.load('./DataForAnalysis/victory_or_defeat_thread_0.npy')
-# tmp1 = np.load('./DataForAnalysis/victory_or_defeat_thread_1.npy')
-# tmp2 = np.load('./DataForAnalysis/victory_or_defeat_thread_2.npy')
-# tmp3 = np.load('./DataForAnalysis/victory_or_defeat_thread_3.npy')
+tmp0 = np.load('./DataForAnalysis/victory_or_defeat_thread_0.npy')
+tmp1 = np.load('./DataForAnalysis/victory_or_defeat_thread_1.npy')
+tmp2 = np.load('./DataForAnalysis/victory_or_defeat_thread_2.npy')
+tmp3 = np.load('./DataForAnalysis/victory_or_defeat_thread_3.npy')
 # tmp0 = np.load('./DataForAnalysis/victory_or_defeat_thread0episode1401.npy')
 # tmp1 = np.load('./DataForAnalysis/victory_or_defeat_thread1episode1401.npy')
 # tmp2 = np.load('./DataForAnalysis/victory_or_defeat_thread2episode1401.npy')
