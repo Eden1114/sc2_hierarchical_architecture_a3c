@@ -11,46 +11,13 @@ import tensorflow.contrib.layers as layers
 import globalvar as GL
 from a3c_reward import a3c_reward
 from macro_actions import action_micro
+import preprocess as prep
 
 list_actions, _ = GL.get_list()
 
 tf.set_random_seed(1)
 config = tf.ConfigProto(allow_soft_placement=True)  # auto distribute device
 config.gpu_options.allow_growth = True  # gpu memory dependent on require
-
-
-def preprocess_minimap(feature_minimap):  # TODO 两个preprocess函数待解析
-    minimap = np.array(feature_minimap, dtype=np.float32)
-    layers = []
-    for i in range(len(features.MINIMAP_FEATURES)):
-        if i == features.MINIMAP_FEATURES.player_id.index:
-            layers.append(minimap[i:i + 1] / features.MINIMAP_FEATURES[i].scale)
-        elif features.MINIMAP_FEATURES[i].type == features.FeatureType.SCALAR:
-            layers.append(minimap[i:i + 1] / features.MINIMAP_FEATURES[i].scale)
-        else:
-            layer = np.zeros([features.MINIMAP_FEATURES[i].scale, minimap.shape[1], minimap.shape[2]], dtype=np.float32)
-            for j in range(features.MINIMAP_FEATURES[i].scale):
-                indy, indx = (minimap[i] == j).nonzero()
-                layer[j, indy, indx] = 1
-            layers.append(layer)
-    return np.expand_dims(np.concatenate(layers, axis=0), axis=0)
-
-
-def preprocess_screen(feature_screen):
-    screen = np.array(feature_screen, dtype=np.float32)
-    layers = []
-    for i in range(len(features.SCREEN_FEATURES)):
-        if i == features.SCREEN_FEATURES.player_id.index or i == features.SCREEN_FEATURES.unit_type.index:
-            layers.append(screen[i:i + 1] / features.SCREEN_FEATURES[i].scale)
-        elif features.SCREEN_FEATURES[i].type == features.FeatureType.SCALAR:
-            layers.append(screen[i:i + 1] / features.SCREEN_FEATURES[i].scale)
-        else:
-            layer = np.zeros([features.SCREEN_FEATURES[i].scale, screen.shape[1], screen.shape[2]], dtype=np.float32)
-            for j in range(features.SCREEN_FEATURES[i].scale):
-                indy, indx = (screen[i] == j).nonzero()
-                layer[j, indy, indx] = 1
-            layers.append(layer)
-    return np.expand_dims(np.concatenate(layers, axis=0), axis=0)
 
 
 class A3C:
@@ -60,8 +27,8 @@ class A3C:
 
         # 每个agent单独的会话、单独的观测传参
         self.sess = sess
-        self.minimap = tf.placeholder(tf.float32, [None, 17, 64, 64])
-        self.screen = tf.placeholder(tf.float32, [None, 42, 64, 64])
+        self.minimap = tf.placeholder(tf.float32, [None, prep.minimap_channel(), 64, 64])
+        self.screen = tf.placeholder(tf.float32, [None, prep.screen_channel(), 64, 64])
         # self.info = tf.placeholder(tf.float32, [None, self.action_num])
         # 为了适配宏动作，把所有的info（available_actions）都去除了
 
@@ -143,8 +110,9 @@ class A3C:
             self.saver = tf.train.Saver(max_to_keep=100)  # 定义self.saver 为 tf的存储器Saver()，在save_model和load_model函数里使用
 
     def step(self, state, env, thread_index):
-        minimap = preprocess_minimap(state.observation['feature_minimap'])
-        screen = preprocess_screen(state.observation['feature_screen'])
+        # 更换游戏环境时应当注意更改输入的feature类型
+        minimap = prep.preprocess_minimap(state.observation['feature_minimap'])
+        screen = prep.preprocess_screen(state.observation['feature_screen'])
         # info = np.zeros([1, self.action_num], dtype=np.float32)
         # info[0, state.observation['available_actions']] = 1  
         feed = {self.minimap: minimap, self.screen: screen}  # self.info: info
