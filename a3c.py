@@ -3,7 +3,6 @@ import threading
 import numpy as np
 from pysc2.env import sc2_env
 from pysc2.lib import actions
-from pysc2.lib import features
 from pysc2 import maps
 from pysc2.lib import stopwatch
 import tensorflow as tf
@@ -111,6 +110,7 @@ class A3C:
 
     def step(self, state, env, thread_index):
         # 更换游戏环境时应当注意更改输入的feature类型
+        # 以下4行将minimap和screen的特征做一定处理后分别保存在minimap和screen变量中，为了与placeholder匹配，功能未研究
         minimap = prep.preprocess_minimap(state.observation['feature_minimap'])
         screen = prep.preprocess_screen(state.observation['feature_screen'])
         # info = np.zeros([1, self.action_num], dtype=np.float32)
@@ -207,8 +207,8 @@ class A3C:
         if last_state.last():
             R = 0  # TODO R设置的具体意义？
         else:
-            minimap = preprocess_minimap(last_state.observation['feature_minimap'])
-            screen = preprocess_screen(last_state.observation['feature_screen'])
+            minimap = prep.preprocess_minimap(last_state.observation['feature_minimap'])
+            screen = prep.preprocess_screen(last_state.observation['feature_screen'])
             # info = np.zeros([1, self.action_num], dtype=np.float32)
             # info[0, last_state.observation['available_actions']] = 1
             feed = {self.minimap: minimap, self.screen: screen}  # self.info: info
@@ -229,8 +229,8 @@ class A3C:
 
         for i, [state, macro_id, action_id, action_args, reward, next_state] in enumerate(buffer):
             # 求解每个step的minimap、screen、info（已去除）、reward
-            minimap = preprocess_minimap(state.observation['feature_minimap'])
-            screen = preprocess_screen(state.observation['feature_screen'])
+            minimap = prep.preprocess_minimap(state.observation['feature_minimap'])
+            screen = prep.preprocess_screen(state.observation['feature_screen'])
             # info = np.zeros([1, self.action_num], dtype=np.float32)
             # info[0, state.observation['available_actions']] = 1
 
