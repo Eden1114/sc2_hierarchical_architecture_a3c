@@ -36,10 +36,10 @@ Python-Matplotlib 9 颜色和样式
 　　　　kp-
 """
 
-tmp0 = np.load('./DataForAnalysis/victory_or_defeat_thread_0.npy')
-tmp1 = np.load('./DataForAnalysis/victory_or_defeat_thread_1.npy')
-tmp2 = np.load('./DataForAnalysis/victory_or_defeat_thread_2.npy')
-tmp3 = np.load('./DataForAnalysis/victory_or_defeat_thread_3.npy')
+# tmp0 = np.load('./DataForAnalysis/victory_or_defeat_thread_0.npy')
+# tmp1 = np.load('./DataForAnalysis/victory_or_defeat_thread_1.npy')
+# tmp2 = np.load('./DataForAnalysis/victory_or_defeat_thread_2.npy')
+# tmp3 = np.load('./DataForAnalysis/victory_or_defeat_thread_3.npy')
 # tmp0 = np.load('./DataForAnalysis/victory_or_defeat_thread0episode1401.npy')
 # tmp1 = np.load('./DataForAnalysis/victory_or_defeat_thread1episode1401.npy')
 # tmp2 = np.load('./DataForAnalysis/victory_or_defeat_thread2episode1401.npy')
@@ -85,11 +85,15 @@ tmp3 = np.load('./DataForAnalysis/victory_or_defeat_thread_3.npy')
 # tmp3 = np.load('./DataForAnalysis/high_reward_of_episode151thread3.npy')
 # tmp4 = np.load('./DataForAnalysis/high_reward_of_episode151thread4.npy')
 
-tmp0 = np.load('./DataForAnalysis/victory_or_defeat_thread_4.npy')
-tmp1 = np.load('./DataForAnalysis/reward_list_thread_4.npy')
-tmp2 = np.load('./DataForAnalysis/episode_score_list_thread_4.npy')
+# tmp0 = np.load('./DataForAnalysis/victory_or_defeat_thread_4.npy')
+# tmp1 = np.load('./DataForAnalysis/reward_list_thread_4.npy')
+# tmp2 = np.load('./DataForAnalysis/episode_score_list_thread_4.npy')
 
-print(len(tmp0))
+# tmp0 = np.load('./DataForAnalysis/feature_minimap_episode_2160.npy')
+# tmp1 = np.load('./DataForAnalysis/minimap_episode_2160.npy')
+
+# print(len(tmp0))
+# print(tmp0)
 # print(tmp1)
 # print(tmp2)
 # print(tmp3)
@@ -98,15 +102,37 @@ print(len(tmp0))
 # print(tmp6)
 # print(tmp7)
 
-count = 0
-for i in tmp0 :
-    if i > -1:
-        count += 1
-print(count / len(tmp0))
+print(tmp0.shape)
+print(tmp1.shape)
+print(tmp1[0][0].shape)
+# count = 0
+# for i in tmp0 :
+#     if i > -1:
+#         count += 1
+# print(count / len(tmp0))
+# x0 = []
+# y0 = []
+# for i in range(64):
+#     for j in range(64):
+#         y0.append(tmp0[5][i][j])
+# for i in range(64):
+#     for j in range(64):
+#         x0.append(tmp0[5][j][i])
 
+# plt.matshow(tmp0[6])
+plt.matshow(tmp1[0][10])
 
+# x1 = []
+# y1 = []
+# for i in range(64):
+#     for j in range(64):
+#         y1.append(tmp1[0][0][i][j])
+# for i in range(64):
+#     for j in range(64):
+#         x1.append(tmp1[0][0][j][i])
+# plt.scatter(x1, y1)
 
-plt.plot(np.arange(len(tmp0)), tmp0, 'b-')
+# plt.plot(np.arange(len(tmp0)), tmp0, 'b-')
 # plt.plot(np.arange(len(tmp1)), tmp1, 'r-')
 # plt.plot(np.arange(len(tmp2)), tmp2, 'g-')
 # plt.plot(np.arange(len(tmp3)), tmp3, 'y-')
