@@ -8,7 +8,7 @@ from pysc2.lib import stopwatch
 import tensorflow as tf
 import tensorflow.contrib.layers as layers
 import globalvar as GL
-from a3c_reward import a3c_reward
+import a3c_reward as reward
 from macro_actions import action_micro
 import preprocess as prep
 
@@ -166,6 +166,9 @@ class A3C:
                 else:
                     action_args.append([0])  # TODO: Be careful
                 action = [actions.FunctionCall(action_id, action_args)]
+        else:  # 需要将location设置为-99，让low_reward知道没有调用location
+            location[0] = -99
+            location[1] = -99
 
         # 校验宏动作：
         flag_success = True
@@ -200,7 +203,7 @@ class A3C:
         #     location[1] = int(max(0, min(64 - 1, location[1] + noise)))        
         # valid_actions = state.observation['available_actions']
 
-        return action_id, action_args, next_state, flag_success, location, macro_id, macro_type, coord_type
+        return action_id, action_args, next_state, flag_success, location, macro_id, macro_type, coord_type, call_spatial
 
     def update(self, buffer, episode, thread_index):
         last_state = buffer[-1][-1]
@@ -302,7 +305,8 @@ def build_env(map_name):
 
 def run(agent, max_episode, map_name, thread_index, flags, snapshot_path):
     env = build_env(map_name)
-    buffer = []
+    buffer_high = []
+    buffer_low = []
     thread_index_all = flags.parallel
     max_step = flags.max_agent_steps
 
@@ -311,33 +315,41 @@ def run(agent, max_episode, map_name, thread_index, flags, snapshot_path):
         episode = GL.get_episode_counter()
         state = env.reset()[0]  # ==timesteps[0]
         counter = 0  # step_counter
+        call_low_counter = 0    # 调用low网络的counter，用于update_low
         GL.episode_init(thread_index)
         while True:
             # step
             counter += 1
             GL.set_value(thread_index, "num_steps", counter)
-            action_id, action_args, next_state, flag_success, location, macro_id, macro_type, coord_type = agent.step(
-                state, env,
-                thread_index)
-            reward = a3c_reward(thread_index, next_state, state, flag_success, location, macro_id, macro_type,
-                                coord_type)
-            sum_reward = GL.get_value(thread_index, "sum_reward")
-            sum_reward += reward
-            GL.set_value(thread_index, "sum_reward", sum_reward)
-            GL.add_value_list(thread_index, "reward_of_episode", reward)
+            action_id, action_args, next_state, flag_success, location, macro_id, macro_type, \
+                coord_type, call_low = agent.step(state, env, thread_index)
+            reward_high = reward.reward_high(thread_index, next_state, state, flag_success)
+            reward_low = reward.reward_low(thread_index, next_state, state, location, macro_type, coord_type, macro_id)
 
-            buffer.append([state, macro_id, action_id, action_args, reward, next_state])
+            buffer_high.append([state, macro_id, action_id, action_args, reward_high, next_state])
             if counter % 200 == 1:  # max_step是10的倍数，不能和此处的同余，否则就会把清空的buffer传进去update
-                agent.update(buffer, episode, thread_index)  # TODO 是否加入lr衰减
-                buffer = []
+                agent.update_high(buffer_high, episode, thread_index)  # TODO 是否加入lr衰减
+                buffer_high = []
+
+            if call_low:
+                buffer_low.append([state, macro_id, action_id, action_args, reward_low, next_state])
+                call_low_counter += 1
+            if call_low_counter % 20 == 1:
+                agent.update_low(buffer_low, episode, thread_index)
+                buffer_low = []
+                call_low_counter = 0
 
             if counter > 3000:  # 人工的胜负条件判断
                 GL.set_value(thread_index, "iswin", True)
 
             if counter > max_step or next_state.last():  # 最终状态
-                if len(buffer) > 0:
-                    agent.update(buffer, episode, thread_index)  # TODO 是否加入lr衰减
-                buffer = []
+                if len(buffer_high) > 0:
+                    agent.update_high(buffer_high, episode, thread_index)  # TODO 是否加入lr衰减
+                buffer_high = []
+                if len(buffer_low) > 0:
+                    agent.update_low(buffer_low, episode, thread_index)
+                buffer_low = []
+
                 state = next_state  # 获取终末state
                 with threading.Lock():  # 线程锁，为了读写安全
                     episode = GL.get_episode_counter()
