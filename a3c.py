@@ -23,9 +23,10 @@ class A3C:
     def __init__(self, sess, reuse):
         # self.action_num = len(actions.FUNCTIONS)
         self.action_num = 6  # non_spatial输出宏动作id，spatial输出location
-
-        # 每个agent单独的会话、单独的观测传参
         self.sess = sess
+        self.lr = 1e-4
+
+        # 每个agent单独的观测传参
         self.minimap = tf.placeholder(tf.float32, [None, prep.minimap_channel(), 64, 64])
         self.screen = tf.placeholder(tf.float32, [None, prep.screen_channel(), 64, 64])
         # self.info = tf.placeholder(tf.float32, [None, self.action_num])
@@ -36,6 +37,12 @@ class A3C:
         self.non_spatial_mask = tf.placeholder(tf.float32, [None, self.action_num])
         self.non_spatial_choose = tf.placeholder(tf.float32, [None, self.action_num])
         self.q_target_value = tf.placeholder(tf.float32, [None])
+        self.low_choose_need = tf.placeholder(tf.float32, [None])
+        self.low_choose_mask = tf.placeholder(tf.float32, [None, 64 ** 2])
+        self.high_choose_mask = tf.placeholder(tf.float32, [None, 6])
+
+        self.low_q_target_value = tf.placeholder(tf.float32, [None])
+        self.high_q_target_value = tf.placeholder(tf.float32, [None])
 
         with tf.variable_scope('agent') and tf.device('/gpu:0'):
             if reuse:
