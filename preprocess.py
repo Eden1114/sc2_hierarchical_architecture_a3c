@@ -12,7 +12,7 @@ _SCREEN_PLAYER_ID = features.SCREEN_FEATURES.player_id.index
 _SCREEN_UNIT_TYPE = features.SCREEN_FEATURES.unit_type.index
 _REQUIRED_MINIMAP = [0, 1, 3, 4, 5, 6]
 # 0: height_map, 1: visibility_map, 2: creep, 3: camera, 4: player_id, 5: player_relative, 6: selected
-_REQUIRED_SCREEN = [0, 1, 4, 5, 6, 7, 8, 9, 14, 15, 16]
+_REQUIRED_SCREEN = [0, 1, 4, 5, 6, 7, 8, 9, 14]
 # 0: height_map, 1: visibility_map, 2: creep, 3: power, 4: player_id, 5: player_relative, 6: unit_type,
 # 7: selected, 8: unit_hit_points, 9: unit_hit_points_ratio, 10: unit_energy, 11: unit_energy_ratio,
 # 12: unit_shields, 13: unit_shields_ratio, 14: unit_density, 15: unit_density_aa, 16: effects
