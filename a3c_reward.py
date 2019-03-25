@@ -5,7 +5,7 @@ import math
 import globalvar as GL
 
 
-def a3c_reward(ind_thread, next_obs, obs, micro_isdone, coordinate, macro_id, macro_type, coord_type):
+def high_reward(ind_thread, next_obs, obs, micro_isdone, coordinate, macro_id, macro_type, coord_type):
     reward = 0.0
     minerals = next_obs.observation.player.minerals
     last_minerals = obs.observation.player.minerals
@@ -237,3 +237,6 @@ def a3c_reward(ind_thread, next_obs, obs, micro_isdone, coordinate, macro_id, ma
         print("Thread%d reward is %.4f" % (ind_thread, reward))
 
     return reward
+
+
+def low_reward():
