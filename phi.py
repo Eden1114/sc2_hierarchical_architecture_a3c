@@ -41,27 +41,27 @@ class PHI:
         self.low_q_target_value = tf.placeholder(tf.float32, [None])
         self.high_q_target_value = tf.placeholder(tf.float32, [None])
 
-        with tf.variable_scope('agent') and tf.device('/gpu:0'):
+        with tf.variable_scope('phi') and tf.device('/gpu:0'):
             if reuse:
                 tf.get_variable_scope().reuse_variables()
 
             # ———————————————— 特征提取网络 —————————————————— #
+            with tf.variable_scope('conv_high'):
+                mconv1 = layers.conv2d(tf.transpose(self.minimap, [0, 2, 3, 1]), 16, 5, scope='mconv1')
+                mconv2 = layers.conv2d(mconv1, 32, 3, scope='mconv2')
+                sconv1 = layers.conv2d(tf.transpose(self.screen, [0, 2, 3, 1]), 16, 5, scope='sconv1')
+                sconv2 = layers.conv2d(sconv1, 32, 3, scope='sconv2')
+                # info_feature = layers.fully_connected(layers.flatten(self.info), 256, activation_fn=tf.tanh,
+                #                                       scope='info_feature')
 
-            mconv1 = layers.conv2d(tf.transpose(self.minimap, [0, 2, 3, 1]), 16, 5, scope='mconv1')
-            mconv2 = layers.conv2d(mconv1, 32, 3, scope='mconv2')
-            sconv1 = layers.conv2d(tf.transpose(self.screen, [0, 2, 3, 1]), 16, 5, scope='sconv1')
-            sconv2 = layers.conv2d(sconv1, 32, 3, scope='sconv2')
-            # info_feature = layers.fully_connected(layers.flatten(self.info), 256, activation_fn=tf.tanh,
-            #                                       scope='info_feature')
+                # flatten_concat = tf.concat([layers.flatten(mconv2), layers.flatten(sconv2), info_feature], axis=1)
+                flatten_concat = tf.concat([layers.flatten(mconv2), layers.flatten(sconv2)], axis=1)
+                flatten_feature = layers.fully_connected(flatten_concat, 256, activation_fn=tf.nn.relu,
+                                                         scope='flatten_feature')
 
-            # flatten_concat = tf.concat([layers.flatten(mconv2), layers.flatten(sconv2), info_feature], axis=1)
-            flatten_concat = tf.concat([layers.flatten(mconv2), layers.flatten(sconv2)], axis=1)
-            flatten_feature = layers.fully_connected(flatten_concat, 256, activation_fn=tf.nn.relu,
-                                                     scope='flatten_feature')
-
-            # TODO 可能加入info向量信息到conv层
-            conv_concat = tf.concat([mconv2, sconv2], axis=3)
-            conv_feature = layers.conv2d(conv_concat, 1, 1, activation_fn=None, scope='conv_feature')
+                # TODO 可能加入info向量信息到conv层
+                conv_concat = tf.concat([mconv2, sconv2], axis=3)
+                conv_feature = layers.conv2d(conv_concat, 1, 1, activation_fn=None, scope='conv_feature')
 
             # ———————————————— 动作选择输出网络 —————————————————— #
 

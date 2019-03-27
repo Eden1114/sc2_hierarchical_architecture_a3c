@@ -16,7 +16,7 @@ list_actions, macro_action_num = GL.get_list()
 tf.set_random_seed(1)
 
 
-class A3C:    # 仅实现a3c算法的相关逻辑(step, save/load)，分层算法的逻辑(init, update)位于phi.py
+class A3C:    # 仅实现a3c算法的相关逻辑(save/load, step和update的feed)，分层算法的逻辑(init, stepupdate)位于phi.py
     def __init__(self, sess, reuse, saver):
         # self.action_num = len(actions.FUNCTIONS)
         self.action_num = macro_action_num  # non_spatial输出宏动作id，spatial输出location
