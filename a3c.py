@@ -12,17 +12,14 @@ import a3c_reward as reward
 from macro_actions import action_micro
 import preprocess as prep
 
-list_actions, _ = GL.get_list()
-
+list_actions, macro_action_num = GL.get_list()
 tf.set_random_seed(1)
-config = tf.ConfigProto(allow_soft_placement=True)  # auto distribute device
-config.gpu_options.allow_growth = True  # gpu memory dependent on require
 
 
-class A3C:
-    def __init__(self, sess, reuse):
+class A3C:    # 仅实现a3c算法的相关逻辑(step, save/load)，分层算法的逻辑(init, update)位于phi.py
+    def __init__(self, sess, reuse, saver):
         # self.action_num = len(actions.FUNCTIONS)
-        self.action_num = 6  # non_spatial输出宏动作id，spatial输出location
+        self.action_num = macro_action_num  # non_spatial输出宏动作id，spatial输出location
         self.sess = sess
         self.lr = 1e-4
 
@@ -37,6 +34,7 @@ class A3C:
         self.non_spatial_mask = tf.placeholder(tf.float32, [None, self.action_num])
         self.non_spatial_choose = tf.placeholder(tf.float32, [None, self.action_num])
         self.q_target_value = tf.placeholder(tf.float32, [None])
+
         self.low_choose_need = tf.placeholder(tf.float32, [None])
         self.low_choose_mask = tf.placeholder(tf.float32, [None, 64 ** 2])
         self.high_choose_mask = tf.placeholder(tf.float32, [None, 6])
@@ -113,7 +111,7 @@ class A3C:
                 grad = tf.clip_by_norm(grad, 10.0)
                 cliped_grad.append([grad, var])
             self.train_op = opt.apply_gradients(cliped_grad)
-            self.saver = tf.train.Saver(max_to_keep=100)  # 定义self.saver 为 tf的存储器Saver()，在save_model和load_model函数里使用
+            self.saver = saver
 
     def step(self, state, env, thread_index):
         # 更换游戏环境时应当注意更改输入的feature类型
@@ -310,6 +308,53 @@ def build_env(map_name):
     return env
 
 
+def episode_log(state, episode, thread_index, num_step, thread_index_all, flags, snapshot_path, agent):
+    iswin = state.reward
+    score = state.observation["score_cumulative"][0]
+    iswin_self = GL.get_value(thread_index, "iswin")
+    print("=====" * 10)
+    print("Episode_counter: ", episode)
+    print("state.reward_isWin: ", iswin)
+    print("self_isWin: ", iswin_self)
+    print('Episode score:  ', score)
+    GL.add_value_list(thread_index, "victory_or_defeat", iswin)
+    GL.add_value_list(thread_index, "victory_or_defeat_self", iswin_self)
+    episode_reward_average = GL.get_value(thread_index, "sum_reward") / num_step
+    GL.add_value_list(thread_index, "reward_list", episode_reward_average)
+    GL.add_value_list(thread_index, "episode_score_list", score)
+    # 存储全episode的累积数据
+    GL.add_value_list(thread_index_all, "victory_or_defeat", iswin)
+    GL.add_value_list(thread_index_all, "victory_or_defeat_self", iswin_self)
+    GL.add_value_list(thread_index_all, "episode_score_list", score)
+    GL.add_value_list(thread_index_all, "reward_list", episode_reward_average)
+    # global_episode是FLAGS.snapshot_step的倍数+1，或指定回合数
+    # 存单个episode的reward变化，存储网络参数（tf.train.Saver().save(),见a3c_agent），存全局numpy以备急停
+    if (episode % flags.snapshot_step == 1) or (episode in flags.quicksave_step_list):
+        agent.save_model(snapshot_path, episode)
+        for i in range(flags.parallel):
+            np.save(
+                "./DataForAnalysis/reward_of_episode_" + str(episode) + "_thread_" + str(i) + ".npy",
+                GL.get_value(i, "reward_of_episode"))
+            np.save(
+                "./DataForAnalysis/reward_list_thread_" + str(i) + "_episode_" + str(episode) + ".npy",
+                GL.get_value(i, "reward_list"))
+            np.save("./DataForAnalysis/victory_or_defeat_thread_" + str(i) + "_episode_" + str(
+                episode) + ".npy", GL.get_value(i, "victory_or_defeat"))
+            np.save("./DataForAnalysis/victory_or_defeat_self_thread_" + str(i) + "_episode_" + str(
+                episode) + ".npy", GL.get_value(i, "victory_or_defeat_self"))
+            np.save("./DataForAnalysis/episode_score_list_thread_" + str(i) + "_episode_" + str(
+                episode) + ".npy", GL.get_value(i, "episode_score_list"))
+        # 存储全episode的累积数据
+        np.save("./DataForAnalysis/victory_or_defeat_thread_" + str(thread_index_all) + "_episode_" + str(
+            episode) + ".npy", GL.get_value(thread_index_all, "victory_or_defeat"))
+        np.save("./DataForAnalysis/victory_or_defeat_self_thread_" + str(thread_index_all) + "_episode_" + str(
+            episode) + ".npy", GL.get_value(thread_index_all, "victory_or_defeat_self"))
+        np.save("./DataForAnalysis/episode_score_list_thread_" + str(thread_index_all) + "_episode_" + str(
+            episode) + ".npy", GL.get_value(thread_index_all, "episode_score_list"))
+        np.save("./DataForAnalysis/reward_list_thread_" + str(thread_index_all) + "_episode_" + str(
+            episode) + ".npy", GL.get_value(thread_index_all, "reward_list"))
+
+
 def run(agent, max_episode, map_name, thread_index, flags, snapshot_path):
     env = build_env(map_name)
     buffer_high = []
@@ -322,7 +367,7 @@ def run(agent, max_episode, map_name, thread_index, flags, snapshot_path):
         episode = GL.get_episode_counter()
         state = env.reset()[0]  # ==timesteps[0]
         counter = 0  # step_counter
-        call_low_counter = 0    # 调用low网络的counter，用于update_low
+        call_low_counter = 0  # 调用low网络的counter，用于update_low
         GL.episode_init(thread_index)
         while True:
             # step
@@ -372,62 +417,18 @@ def run(agent, max_episode, map_name, thread_index, flags, snapshot_path):
             break
 
 
-def episode_log(state, episode, thread_index, num_step, thread_index_all, flags, snapshot_path, agent):
-    iswin = state.reward
-    score = state.observation["score_cumulative"][0]
-    iswin_self = GL.get_value(thread_index, "iswin")
-    print("=====" * 10)
-    print("Episode_counter: ", episode)
-    print("state.reward_isWin: ", iswin)
-    print("self_isWin: ", iswin_self)
-    print('Episode score:  ', score)
-    GL.add_value_list(thread_index, "victory_or_defeat", iswin)
-    GL.add_value_list(thread_index, "victory_or_defeat_self", iswin_self)
-    episode_reward_average = GL.get_value(thread_index, "sum_reward") / num_step
-    GL.add_value_list(thread_index, "reward_list", episode_reward_average)
-    GL.add_value_list(thread_index, "episode_score_list", score)
-    # 存储全episode的累积数据
-    GL.add_value_list(thread_index_all, "victory_or_defeat", iswin)
-    GL.add_value_list(thread_index_all, "victory_or_defeat_self", iswin_self)
-    GL.add_value_list(thread_index_all, "episode_score_list", score)
-    GL.add_value_list(thread_index_all, "reward_list", episode_reward_average)
-    # global_episode是FLAGS.snapshot_step的倍数+1，或指定回合数
-    # 存单个episode的reward变化，存储网络参数（tf.train.Saver().save(),见a3c_agent），存全局numpy以备急停
-    if (episode % flags.snapshot_step == 1) or (episode in flags.quicksave_step_list):
-        agent.save_model(snapshot_path, episode)
-        for i in range(flags.parallel):
-            np.save(
-                "./DataForAnalysis/reward_of_episode_" + str(episode) + "_thread_" + str(i) + ".npy",
-                GL.get_value(i, "reward_of_episode"))
-            np.save(
-                "./DataForAnalysis/reward_list_thread_" + str(i) + "_episode_" + str(episode) + ".npy",
-                GL.get_value(i, "reward_list"))
-            np.save("./DataForAnalysis/victory_or_defeat_thread_" + str(i) + "_episode_" + str(
-                episode) + ".npy", GL.get_value(i, "victory_or_defeat"))
-            np.save("./DataForAnalysis/victory_or_defeat_self_thread_" + str(i) + "_episode_" + str(
-                episode) + ".npy", GL.get_value(i, "victory_or_defeat_self"))
-            np.save("./DataForAnalysis/episode_score_list_thread_" + str(i) + "_episode_" + str(
-                episode) + ".npy", GL.get_value(i, "episode_score_list"))
-        # 存储全episode的累积数据
-        np.save("./DataForAnalysis/victory_or_defeat_thread_" + str(thread_index_all) + "_episode_" + str(
-            episode) + ".npy", GL.get_value(thread_index_all, "victory_or_defeat"))
-        np.save("./DataForAnalysis/victory_or_defeat_self_thread_" + str(thread_index_all) + "_episode_" + str(
-            episode) + ".npy", GL.get_value(thread_index_all, "victory_or_defeat_self"))
-        np.save("./DataForAnalysis/episode_score_list_thread_" + str(thread_index_all) + "_episode_" + str(
-            episode) + ".npy", GL.get_value(thread_index_all, "episode_score_list"))
-        np.save("./DataForAnalysis/reward_list_thread_" + str(thread_index_all) + "_episode_" + str(
-            episode) + ".npy", GL.get_value(thread_index_all, "reward_list"))
-
-
 def run_a3c(max_episode, map_name, parallel, flags, snapshot_path):
+    config = tf.ConfigProto(allow_soft_placement=True)  # auto distribute device
+    config.gpu_options.allow_growth = True  # gpu memory dependent on require
     sess = tf.Session(config=config)
+    saver = tf.train.Saver(max_to_keep=100)  # 定义saver 为 tf的存储器Saver()，在agent.save_model和load_model函数里使用
     stopwatch.sw.enabled = flags.profile or flags.trace  # 应该是开启类似计时时钟这样的观测量
     stopwatch.sw.trace = flags.trace
     maps.get(flags.map)  # Assert the map exists.
 
     agents = []
     for i in range(parallel):
-        agent = A3C(sess, i > 0)
+        agent = A3C(sess, i > 0, saver)
         agents.append(agent)
 
     sess.run(tf.global_variables_initializer())
