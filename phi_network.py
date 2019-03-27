@@ -34,37 +34,9 @@ class PHI:
 
         with tf.variable_scope('phi') and tf.device('/gpu:0'):
 
-            # ———————————————— 特征提取网络 —————————————————— #
-            with tf.variable_scope('conv_high'):
-                mconv1 = layers.conv2d(tf.transpose(self.minimap, [0, 2, 3, 1]), 16, 5, name='mconv1')
-                mconv2 = layers.conv2d(mconv1, 32, 3, name='mconv2')
-                sconv1 = layers.conv2d(tf.transpose(self.screen, [0, 2, 3, 1]), 16, 5, name='sconv1')
-                sconv2 = layers.conv2d(sconv1, 32, 3, name='sconv2')
-                info_feature = layers.fully_connected(layers.flatten(self.info_high), 32, activation_fn=tf.tanh,
-                                                      name='info_feature')
 
-                flatten_concat = tf.concat([layers.flatten(mconv2), layers.flatten(sconv2), info_feature], axis=1)
-                flatten_feature_high = layers.fully_connected(flatten_concat, 256, activation_fn=tf.nn.relu,
-                                                         name='flatten_feature')
 
-                conv_concat = tf.concat([mconv2, sconv2], axis=3)
-                conv_feature_high = layers.conv2d(conv_concat, 1, 1, activation_fn=None, name='conv_feature')
-            with tf.variable_scope('conv_high'):
-                mconv1 = layers.conv2d(tf.transpose(self.minimap, [0, 2, 3, 1]), 16, 5, name='mconv1')
-                mconv2 = layers.conv2d(mconv1, 32, 3, name='mconv2')
-                sconv1 = layers.conv2d(tf.transpose(self.screen, [0, 2, 3, 1]), 16, 5, name='sconv1')
-                sconv2 = layers.conv2d(sconv1, 32, 3, name='sconv2')
-                info_feature = layers.fully_connected(layers.flatten(self.info_high), 32, activation_fn=tf.tanh,
-                                                      name='info_feature')
-
-                flatten_concat = tf.concat([layers.flatten(mconv2), layers.flatten(sconv2), info_feature], axis=1)
-                flatten_feature_low = layers.fully_connected(flatten_concat, 256, activation_fn=tf.nn.relu,
-                                                         name='flatten_feature')
-
-                conv_concat = tf.concat([mconv2, sconv2], axis=3)
-                conv_feature_low = layers.conv2d(conv_concat, 1, 1, activation_fn=None, name='conv_feature')
-
-            # ———————————————— 动作选择输出网络 —————————————————— #
+            # ———————————————— 决策层 —————————————————— #
 
             self.q_value = tf.reshape(layers.fully_connected(flatten_feature, 1, activation_fn=None,
                                                              scope='q_value'), [-1])  # TODO 作用未知
@@ -75,7 +47,7 @@ class PHI:
                                                              activation_fn=tf.nn.softmax,
                                                              scope='non_spatial_action')
 
-            # ———————————————— 策略提升网络 —————————————————— #
+            # ———————————————— 网络训练—————————————————— #
             # TODO 需要这部分所使用算法的详细解析
             advantage = tf.stop_gradient(self.q_target_value - self.q_value)
 
@@ -112,3 +84,39 @@ class PHI:
                 cliped_grad.append([grad, var])
             self.train_op = opt.apply_gradients(cliped_grad)
             self.saver = tf.train.Saver(max_to_keep=100)  # 定义self.saver 为 tf的存储器Saver()，在save_model和load_model函数里使用
+
+
+    def build_net_high(self):
+        with tf.variable_scope('network_high'):
+            with tf.variable_scope('feature_high'):
+                mconv1 = layers.conv2d(tf.transpose(self.minimap, [0, 2, 3, 1]), 16, 5, name='mconv1')
+                mconv2 = layers.conv2d(mconv1, 32, 3, name='mconv2')
+                sconv1 = layers.conv2d(tf.transpose(self.screen, [0, 2, 3, 1]), 16, 5, name='sconv1')
+                sconv2 = layers.conv2d(sconv1, 32, 3, name='sconv2')
+                info_high = layers.fully_connected(layers.flatten(self.info_high), 32, activation_fn=tf.tanh,
+                                                   name='info_high')
+
+                flatten_concat = tf.concat([layers.flatten(mconv2), layers.flatten(sconv2), info_high], axis=1)
+                flatten_feature_high = layers.fully_connected(flatten_concat, 256, activation_fn=tf.nn.relu,
+                                                              name='flatten_feature')
+
+                conv_concat = tf.concat([mconv2, sconv2], axis=3)
+                conv_feature_high = layers.conv2d(conv_concat, 1, 1, activation_fn=None, name='conv_feature')
+
+
+    def build_net_low(self):
+        with tf.variable_scope('network_low'):
+            with tf.variable_scope('feature_low'):
+                mconv1 = layers.conv2d(tf.transpose(self.minimap, [0, 2, 3, 1]), 16, 5, name='mconv1')
+                mconv2 = layers.conv2d(mconv1, 32, 3, name='mconv2')
+                sconv1 = layers.conv2d(tf.transpose(self.screen, [0, 2, 3, 1]), 16, 5, name='sconv1')
+                sconv2 = layers.conv2d(sconv1, 32, 3, name='sconv2')
+                info_low = layers.fully_connected(layers.flatten(self.info_low), 32, activation_fn=tf.tanh,
+                                                  name='info_low')
+
+                flatten_concat = tf.concat([layers.flatten(mconv2), layers.flatten(sconv2), info_low], axis=1)
+                flatten_feature_low = layers.fully_connected(flatten_concat, 256, activation_fn=tf.nn.relu,
+                                                             name='flatten_feature')
+
+                conv_concat = tf.concat([mconv2, sconv2], axis=3)
+                conv_feature_low = layers.conv2d(conv_concat, 1, 1, activation_fn=None, name='conv_feature')

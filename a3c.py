@@ -11,7 +11,7 @@ import globalvar as GL
 import a3c_reward as reward
 from macro_actions import action_micro
 import preprocess as prep
-from phi import PHI
+from phi_network import PHI
 
 list_actions, macro_action_num = GL.get_list()
 tf.set_random_seed(1)
