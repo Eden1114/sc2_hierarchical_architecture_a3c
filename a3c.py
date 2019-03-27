@@ -18,7 +18,7 @@ tf.set_random_seed(1)
 
 
 class A3C:    # 仅实现a3c算法的相关逻辑(save/load, step和update的feed, target定义)，分层算法的逻辑位于phi.py
-    def __init__(self, sess, reuse, saver):
+    def __init__(self, sess, reuse):
         # self.action_num = len(actions.FUNCTIONS)
         self.action_num = macro_action_num  # non_spatial输出宏动作id，spatial输出location
         self.sess = sess
@@ -120,7 +120,9 @@ class A3C:    # 仅实现a3c算法的相关逻辑(save/load, step和update的fee
                 grad = tf.clip_by_norm(grad, 10.0)
                 cliped_grad.append([grad, var])
             self.train_op = opt.apply_gradients(cliped_grad)
-            self.saver = saver
+            self.saver = tf.train.Saver(max_to_keep=100)  # 定义saver 为 tf的存储器Saver()，在agent.save_model和load_model函数里使用
+
+
 
     def step(self, state, env, thread_index):
         # 更换游戏环境时应当注意更改输入的feature类型
@@ -430,14 +432,13 @@ def run_a3c(max_episode, map_name, parallel, flags, snapshot_path):
     config = tf.ConfigProto(allow_soft_placement=True)  # auto distribute device
     config.gpu_options.allow_growth = True  # gpu memory dependent on require
     sess = tf.Session(config=config)
-    saver = tf.train.Saver(max_to_keep=100)  # 定义saver 为 tf的存储器Saver()，在agent.save_model和load_model函数里使用
     stopwatch.sw.enabled = flags.profile or flags.trace  # 应该是开启类似计时时钟这样的观测量
     stopwatch.sw.trace = flags.trace
     maps.get(flags.map)  # Assert the map exists.
 
     agents = []
     for i in range(parallel):
-        agent = A3C(sess, i > 0, saver)
+        agent = A3C(sess, i > 0)
         agents.append(agent)
 
     sess.run(tf.global_variables_initializer())
