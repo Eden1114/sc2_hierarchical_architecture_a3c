@@ -96,12 +96,13 @@ class PHI:
                 info_high = layers.fully_connected(layers.flatten(self.info_high), 32, activation_fn=tf.tanh,
                                                    name='info_high')
 
-                flatten_concat = tf.concat([layers.flatten(mconv2), layers.flatten(sconv2), info_high], axis=1)
-                flatten_feature_high = layers.fully_connected(flatten_concat, 256, activation_fn=tf.nn.relu,
+                full_concat = tf.concat([layers.flatten(mconv2), layers.flatten(sconv2), info_high], axis=1)
+                full_feature_high = layers.fully_connected(full_concat, 256, activation_fn=tf.nn.relu,
                                                               name='flatten_feature')
-
                 conv_concat = tf.concat([mconv2, sconv2], axis=3)
                 conv_feature_high = layers.conv2d(conv_concat, 1, 1, activation_fn=None, name='conv_feature')
+            with tf.variable_scope('actor_high'):
+
 
 
     def build_net_low(self):
@@ -114,8 +115,8 @@ class PHI:
                 info_low = layers.fully_connected(layers.flatten(self.info_low), 32, activation_fn=tf.tanh,
                                                   name='info_low')
 
-                flatten_concat = tf.concat([layers.flatten(mconv2), layers.flatten(sconv2), info_low], axis=1)
-                flatten_feature_low = layers.fully_connected(flatten_concat, 256, activation_fn=tf.nn.relu,
+                full_concat = tf.concat([layers.flatten(mconv2), layers.flatten(sconv2), info_low], axis=1)
+                full_feature_low = layers.fully_connected(full_concat, 256, activation_fn=tf.nn.relu,
                                                              name='flatten_feature')
 
                 conv_concat = tf.concat([mconv2, sconv2], axis=3)
