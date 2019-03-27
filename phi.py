@@ -13,55 +13,56 @@ from macro_actions import action_micro
 import preprocess as prep
 
 
-_, macro_action_num = GL.get_list()
-
-
 class PHI:
-    def __init__(self, sess, reuse):
+    def __init__(self, sess, macro_action_num, lr, minimap_size, screen_size, info_size_high, info_size_low):
         self.action_num = macro_action_num  # high输出宏动作id，low输出location
         self.sess = sess
-        self.lr = 1e-4
-
-        # 每个agent单独的观测传参
-        self.minimap = tf.placeholder(tf.float32, [None, prep.minimap_channel(), 64, 64])
-        self.screen = tf.placeholder(tf.float32, [None, prep.screen_channel(), 64, 64])
-        # self.info = tf.placeholder(tf.float32, [None, self.action_num])
-        # 为了适配宏动作，把所有的info（available_actions）都去除了
-
-        self.spatial_mask = tf.placeholder(tf.float32, [None])
-        self.spatial_choose = tf.placeholder(tf.float32, [None, 64 ** 2])
-        self.non_spatial_mask = tf.placeholder(tf.float32, [None, self.action_num])
-        self.non_spatial_choose = tf.placeholder(tf.float32, [None, self.action_num])
-        self.q_target_value = tf.placeholder(tf.float32, [None])
-
-        self.low_choose_need = tf.placeholder(tf.float32, [None])
-        self.low_choose_mask = tf.placeholder(tf.float32, [None, 64 ** 2])
-        self.high_choose_mask = tf.placeholder(tf.float32, [None, 6])
-
-        self.low_q_target_value = tf.placeholder(tf.float32, [None])
-        self.high_q_target_value = tf.placeholder(tf.float32, [None])
+        self.learning_rate = lr
+        self.minimap_size = minimap_size
+        self.screen_size = screen_size
+        self.info_size_high = info_size_high
+        # 当前step，矿物，闲置农民，剩余人口，农民数量，军队数量，房子数量，兵营数量，击杀单位奖励，击杀建筑奖励
+        self.info_size_low = info_size_low
+        # 当前step，房子数量，兵营数量，击杀单位奖励，击杀建筑奖励
+        self.minimap = tf.placeholder(tf.float32, [None, prep.minimap_channel(), self.minimap_size, self.minimap_size])
+        self.screen = tf.placeholder(tf.float32, [None, prep.screen_channel(), self.screen_size, self.screen_size])
+        # self.info = tf.placeholder(tf.float32, [None, self.action_num])   # 把所有的info（available_actions）都去除了
+        self.info_high = tf.placeholder(tf.float32, [None, self.info_size_high])
+        self.info_low = tf.placeholder(tf.float32, [None, self.info_size_low])
+        self.dir_high = tf.placeholder(tf.float32, [1, 1], name='dir_high')
+        self.act_id = tf.placeholder(tf.float32, [1, 1], name='act_id')
 
         with tf.variable_scope('phi') and tf.device('/gpu:0'):
-            if reuse:
-                tf.get_variable_scope().reuse_variables()
 
             # ———————————————— 特征提取网络 —————————————————— #
             with tf.variable_scope('conv_high'):
-                mconv1 = layers.conv2d(tf.transpose(self.minimap, [0, 2, 3, 1]), 16, 5, scope='mconv1')
-                mconv2 = layers.conv2d(mconv1, 32, 3, scope='mconv2')
-                sconv1 = layers.conv2d(tf.transpose(self.screen, [0, 2, 3, 1]), 16, 5, scope='sconv1')
-                sconv2 = layers.conv2d(sconv1, 32, 3, scope='sconv2')
-                # info_feature = layers.fully_connected(layers.flatten(self.info), 256, activation_fn=tf.tanh,
-                #                                       scope='info_feature')
+                mconv1 = layers.conv2d(tf.transpose(self.minimap, [0, 2, 3, 1]), 16, 5, name='mconv1')
+                mconv2 = layers.conv2d(mconv1, 32, 3, name='mconv2')
+                sconv1 = layers.conv2d(tf.transpose(self.screen, [0, 2, 3, 1]), 16, 5, name='sconv1')
+                sconv2 = layers.conv2d(sconv1, 32, 3, name='sconv2')
+                info_feature = layers.fully_connected(layers.flatten(self.info_high), 32, activation_fn=tf.tanh,
+                                                      name='info_feature')
 
-                # flatten_concat = tf.concat([layers.flatten(mconv2), layers.flatten(sconv2), info_feature], axis=1)
-                flatten_concat = tf.concat([layers.flatten(mconv2), layers.flatten(sconv2)], axis=1)
-                flatten_feature = layers.fully_connected(flatten_concat, 256, activation_fn=tf.nn.relu,
-                                                         scope='flatten_feature')
+                flatten_concat = tf.concat([layers.flatten(mconv2), layers.flatten(sconv2), info_feature], axis=1)
+                flatten_feature_high = layers.fully_connected(flatten_concat, 256, activation_fn=tf.nn.relu,
+                                                         name='flatten_feature')
 
-                # TODO 可能加入info向量信息到conv层
                 conv_concat = tf.concat([mconv2, sconv2], axis=3)
-                conv_feature = layers.conv2d(conv_concat, 1, 1, activation_fn=None, scope='conv_feature')
+                conv_feature_high = layers.conv2d(conv_concat, 1, 1, activation_fn=None, name='conv_feature')
+            with tf.variable_scope('conv_high'):
+                mconv1 = layers.conv2d(tf.transpose(self.minimap, [0, 2, 3, 1]), 16, 5, name='mconv1')
+                mconv2 = layers.conv2d(mconv1, 32, 3, name='mconv2')
+                sconv1 = layers.conv2d(tf.transpose(self.screen, [0, 2, 3, 1]), 16, 5, name='sconv1')
+                sconv2 = layers.conv2d(sconv1, 32, 3, name='sconv2')
+                info_feature = layers.fully_connected(layers.flatten(self.info_high), 32, activation_fn=tf.tanh,
+                                                      name='info_feature')
+
+                flatten_concat = tf.concat([layers.flatten(mconv2), layers.flatten(sconv2), info_feature], axis=1)
+                flatten_feature_low = layers.fully_connected(flatten_concat, 256, activation_fn=tf.nn.relu,
+                                                         name='flatten_feature')
+
+                conv_concat = tf.concat([mconv2, sconv2], axis=3)
+                conv_feature_low = layers.conv2d(conv_concat, 1, 1, activation_fn=None, name='conv_feature')
 
             # ———————————————— 动作选择输出网络 —————————————————— #
 

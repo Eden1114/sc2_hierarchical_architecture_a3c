@@ -11,24 +11,31 @@ import globalvar as GL
 import a3c_reward as reward
 from macro_actions import action_micro
 import preprocess as prep
+from phi import PHI
 
 list_actions, macro_action_num = GL.get_list()
 tf.set_random_seed(1)
 
 
-class A3C:    # 仅实现a3c算法的相关逻辑(save/load, step和update的feed)，分层算法的逻辑(init, stepupdate)位于phi.py
+class A3C:    # 仅实现a3c算法的相关逻辑(save/load, step和update的feed, target定义)，分层算法的逻辑位于phi.py
     def __init__(self, sess, reuse, saver):
         # self.action_num = len(actions.FUNCTIONS)
         self.action_num = macro_action_num  # non_spatial输出宏动作id，spatial输出location
         self.sess = sess
-        self.lr = 1e-4
+        self.learning_rate = 1e-4
+        self.minimap_size = 64
+        self.screen_size = 64
+        self.info_size_high = 10
+        # 当前step，矿物，闲置农民，剩余人口，农民数量，军队数量，房子数量，兵营数量，击杀单位奖励，击杀建筑奖励
+        self.info_size_low = 5
+        phi_net = PHI(sess, self.action_num, self.learning_rate, self.minimap_size, self.screen_size, self.info_size_high, self.info_size_low)
 
         # 每个agent单独的观测传参
         self.minimap = tf.placeholder(tf.float32, [None, prep.minimap_channel(), 64, 64])
         self.screen = tf.placeholder(tf.float32, [None, prep.screen_channel(), 64, 64])
         # self.info = tf.placeholder(tf.float32, [None, self.action_num])
         # 为了适配宏动作，把所有的info（available_actions）都去除了
-
+        # 网络输出与处理
         self.spatial_mask = tf.placeholder(tf.float32, [None])
         self.spatial_choose = tf.placeholder(tf.float32, [None, 64 ** 2])
         self.non_spatial_mask = tf.placeholder(tf.float32, [None, self.action_num])
@@ -42,9 +49,11 @@ class A3C:    # 仅实现a3c算法的相关逻辑(save/load, step和update的fee
         self.low_q_target_value = tf.placeholder(tf.float32, [None])
         self.high_q_target_value = tf.placeholder(tf.float32, [None])
 
+
         with tf.variable_scope('agent') and tf.device('/gpu:0'):
             if reuse:
                 tf.get_variable_scope().reuse_variables()
+                assert tf.get_variable_scope().reuse
 
             # ———————————————— 特征提取网络 —————————————————— #
 
