@@ -58,9 +58,9 @@ def action_micro(ind_thread, dir_high, ind_todo):
             LocationToApply = [random.randint(0, 63), random.randint(0, 63)]
         action = [actions.FunctionCall(function=2, arguments=[[0],
                                                               LocationToApply])]  # 随机选择全局变量barrack_location中存储的一个坐标（希望是之前成功建好的&目前健在的兵营）
-        print("Thread ", ind_thread, end=" ")
-        print("Train_marine: ", action, end=" ")
-        print("Barrack_location: ", tem)
+        # print("Thread ", ind_thread, end=" ")
+        # print("Train_marine: ", action, end=" ")
+        # print("Barrack_location: ", tem)
     # elif dir_high == 3 and ind_todo == 3:
     #     action = [actions.FunctionCall(function=1, arguments=[[20, 25]])]  # 移动镜头到标准位置
     elif dir_high == 3 and ind_todo == 7:
