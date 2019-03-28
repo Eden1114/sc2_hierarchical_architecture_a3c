@@ -70,8 +70,10 @@ class A3CAgent(object):
             self.minimap = tf.placeholder(tf.float32, [None, U.minimap_channel(), self.msize, self.msize],
                                           name='minimap')
             self.screen = tf.placeholder(tf.float32, [None, U.screen_channel(), self.ssize, self.ssize], name='screen')
-            self.info_high = tf.placeholder(tf.float32, [None, self.isize + self.info_plus_size_high], name='info_high')
-            self.info_low = tf.placeholder(tf.float32, [None, self.isize + self.info_plus_size_low], name='info_low')
+            # self.info_high = tf.placeholder(tf.float32, [None, self.isize + self.info_plus_size_high], name='info_high')
+            # self.info_low = tf.placeholder(tf.float32, [None, self.isize + self.info_plus_size_low], name='info_low')
+            self.info_high = tf.placeholder(tf.float32, [None, self.info_plus_size_high], name='info_high')
+            self.info_low = tf.placeholder(tf.float32, [None, self.info_plus_size_low], name='info_low')
             self.dir_high_usedToFeedLowNet = tf.placeholder(tf.float32, [1, 1], name='dir_high_usedToFeedLowNet')
             self.act_id = tf.placeholder(tf.float32, [1, 1], name='act_id')
 
@@ -163,8 +165,8 @@ class A3CAgent(object):
         minimap = np.expand_dims(U.preprocess_minimap(minimap), axis=0)  # 这四行具体语法暂未研究
         screen = np.array(obs.observation['feature_screen'], dtype=np.float32)
         screen = np.expand_dims(U.preprocess_screen(screen), axis=0)
-        info = np.zeros([1, self.isize], dtype=np.float32)  # self.isize值是动作函数的数量
-        info[0, obs.observation['available_actions']] = 1  # info存储可执行的动作。
+        # info = np.zeros([1, self.isize], dtype=np.float32)  # self.isize值是动作函数的数量
+        # info[0, obs.observation['available_actions']] = 1  # info存储可执行的动作。
         # info_plus_high: 当前step，矿物，闲置农民，剩余人口，农民数量，军队数量，房子数量，兵营数量，击杀奖励
         step_count = GL.get_value(ind_thread, "num_steps")
         minerals = obs.observation.player.minerals
@@ -176,12 +178,14 @@ class A3CAgent(object):
         barrack_num = GL.get_value(ind_thread, "barrack_num")
         killed_unit_score = obs.observation["score_cumulative"][5]
         killed_structure_score = obs.observation["score_cumulative"][6]
-        info_plus_high = np.zeros([1, self.info_plus_size_high], dtype=np.float32)
-        info_plus_high[0] = step_count, minerals, idle_worker, food_remain, worker_count, army_count, \
-                            supply_num, barrack_num, killed_unit_score, killed_structure_score
-        # info 现在的size 是 isize + info_plus_size
-        info_high = np.concatenate((info, info_plus_high), axis=1)
-
+        # info_plus_high = np.zeros([1, self.info_plus_size_high], dtype=np.float32)
+        # info_plus_high[0] = step_count, minerals, idle_worker, food_remain, worker_count, army_count, \
+        #                     supply_num, barrack_num, killed_unit_score, killed_structure_score
+        # # info 现在的size 是 isize + info_plus_size
+        # info_high = np.concatenate((info, info_plus_high), axis=1)
+        info_high = np.zeros([1, self.info_plus_size_high], dtype=np.float32)
+        info_high[0] = step_count, minerals, idle_worker, food_remain, worker_count, army_count, \
+                       supply_num, barrack_num, killed_unit_score, killed_structure_score
         feed = {self.minimap: minimap,
                 self.screen: screen,
                 self.info_high: info_high}
@@ -208,17 +212,19 @@ class A3CAgent(object):
         minimap = np.expand_dims(U.preprocess_minimap(minimap), axis=0)  # 这四行具体语法暂未研究
         screen = np.array(obs.observation['feature_screen'], dtype=np.float32)
         screen = np.expand_dims(U.preprocess_screen(screen), axis=0)
-        info = np.zeros([1, self.isize], dtype=np.float32)  # self.isize值是动作函数的数量
-        info[0, obs.observation['available_actions']] = 1  # info存储可执行的动作。
+        # info = np.zeros([1, self.isize], dtype=np.float32)  # self.isize值是动作函数的数量
+        # info[0, obs.observation['available_actions']] = 1  # info存储可执行的动作。
         # info_plus_low: 当前step，房子数量，兵营数量，击杀奖励
         step_count = GL.get_value(ind_thread, "num_steps")
         supply_num = GL.get_value(ind_thread, "supply_num")
         barrack_num = GL.get_value(ind_thread, "barrack_num")
         killed_unit_score = obs.observation["score_cumulative"][5]
         killed_structure_score = obs.observation["score_cumulative"][6]
-        info_plus_low = np.zeros([1, self.info_plus_size_low], dtype=np.float32)
-        info_plus_low[0] = step_count, supply_num, barrack_num, killed_unit_score, killed_structure_score
-        info_low = np.concatenate((info, info_plus_low), axis=1)
+        # info_plus_low = np.zeros([1, self.info_plus_size_low], dtype=np.float32)
+        # info_plus_low[0] = step_count, supply_num, barrack_num, killed_unit_score, killed_structure_score
+        # info_low = np.concatenate((info, info_plus_low), axis=1)
+        info_low = np.zeros([1, self.info_plus_size_low], dtype=np.float32)
+        info_low[0] = step_count, supply_num, barrack_num, killed_unit_score, killed_structure_score
         dir_high_usedToFeedLowNet = np.ones([1, 1], dtype=np.float32)
         dir_high_usedToFeedLowNet[0][0] = dir_high
         act_ID = np.ones([1, 1], dtype=np.float32)
@@ -261,17 +267,19 @@ class A3CAgent(object):
             minimap = np.expand_dims(U.preprocess_minimap(minimap), axis=0)
             screen = np.array(obs.observation['feature_screen'], dtype=np.float32)
             screen = np.expand_dims(U.preprocess_screen(screen), axis=0)
-            info = np.zeros([1, self.isize], dtype=np.float32)
-            info[0, obs.observation['available_actions']] = 1
+            # info = np.zeros([1, self.isize], dtype=np.float32)
+            # info[0, obs.observation['available_actions']] = 1
             # info_plus_low: 当前step，房子数量，兵营数量，击杀奖励
             step_count = GL.get_value(ind_thread, "num_steps")
             supply_num = GL.get_value(ind_thread, "supply_num")
             barrack_num = GL.get_value(ind_thread, "barrack_num")
             killed_unit_score = obs.observation["score_cumulative"][5]
             killed_structure_score = obs.observation["score_cumulative"][6]
-            info_plus_low = np.zeros([1, self.info_plus_size_low], dtype=np.float32)
-            info_plus_low[0] = step_count, supply_num, barrack_num, killed_unit_score, killed_structure_score
-            info_low = np.concatenate((info, info_plus_low), axis=1)
+            # info_plus_low = np.zeros([1, self.info_plus_size_low], dtype=np.float32)
+            # info_plus_low[0] = step_count, supply_num, barrack_num, killed_unit_score, killed_structure_score
+            # info_low = np.concatenate((info, info_plus_low), axis=1)
+            info_low = np.zeros([1, self.info_plus_size_low], dtype=np.float32)
+            info_low[0] = step_count, supply_num, barrack_num, killed_unit_score, killed_structure_score
             dir_high_usedToFeedLowNet = np.ones([1, 1], dtype=np.float32)
             dir_high_usedToFeedLowNet[0][0] = dhs[0]
             act_id = np.ones([1, 1], dtype=np.float32)
@@ -310,17 +318,19 @@ class A3CAgent(object):
             minimap = np.expand_dims(U.preprocess_minimap(minimap), axis=0)
             screen = np.array(obs.observation['feature_screen'], dtype=np.float32)
             screen = np.expand_dims(U.preprocess_screen(screen), axis=0)
-            info = np.zeros([1, self.isize], dtype=np.float32)
-            info[0, obs.observation['available_actions']] = 1
+            # info = np.zeros([1, self.isize], dtype=np.float32)
+            # info[0, obs.observation['available_actions']] = 1
             # info_plus_low: 当前step，房子数量，兵营数量，击杀奖励
             step_count = GL.get_value(ind_thread, "num_steps")
             supply_num = GL.get_value(ind_thread, "supply_num")
             barrack_num = GL.get_value(ind_thread, "barrack_num")
             killed_unit_score = obs.observation["score_cumulative"][5]
             killed_structure_score = obs.observation["score_cumulative"][6]
-            info_plus_low = np.zeros([1, self.info_plus_size_low], dtype=np.float32)
-            info_plus_low[0] = step_count, supply_num, barrack_num, killed_unit_score, killed_structure_score
-            info_low = np.concatenate((info, info_plus_low), axis=1)
+            # info_plus_low = np.zeros([1, self.info_plus_size_low], dtype=np.float32)
+            # info_plus_low[0] = step_count, supply_num, barrack_num, killed_unit_score, killed_structure_score
+            # info_low = np.concatenate((info, info_plus_low), axis=1)
+            info_low = np.zeros([1, self.info_plus_size_low], dtype=np.float32)
+            info_low[0] = step_count, supply_num, barrack_num, killed_unit_score, killed_structure_score
 
             minimaps.append(minimap)
             screens.append(screen)
@@ -384,8 +394,8 @@ class A3CAgent(object):
             minimap = np.expand_dims(U.preprocess_minimap(minimap), axis=0)
             screen = np.array(obs.observation['feature_screen'], dtype=np.float32)
             screen = np.expand_dims(U.preprocess_screen(screen), axis=0)
-            info = np.zeros([1, self.isize], dtype=np.float32)
-            info[0, obs.observation['available_actions']] = 1
+            # info = np.zeros([1, self.isize], dtype=np.float32)
+            # info[0, obs.observation['available_actions']] = 1
             # info_plus_high: 当前step，矿物，闲置农民，剩余人口，农民数量，军队数量，房子数量，兵营数量，击杀奖励
             step_count = GL.get_value(ind_thread, "num_steps")
             minerals = obs.observation.player.minerals
@@ -397,10 +407,13 @@ class A3CAgent(object):
             barrack_num = GL.get_value(ind_thread, "barrack_num")
             killed_unit_score = obs.observation["score_cumulative"][5]
             killed_structure_score = obs.observation["score_cumulative"][6]
-            info_plus_high = np.zeros([1, self.info_plus_size_high], dtype=np.float32)
-            info_plus_high[0] = step_count, minerals, idle_worker, food_remain, worker_count, army_count, \
-                                supply_num, barrack_num, killed_unit_score, killed_structure_score
-            info_high = np.concatenate((info, info_plus_high), axis=1)
+            # info_plus_high = np.zeros([1, self.info_plus_size_high], dtype=np.float32)
+            # info_plus_high[0] = step_count, minerals, idle_worker, food_remain, worker_count, army_count, \
+            #                     supply_num, barrack_num, killed_unit_score, killed_structure_score
+            # info_high = np.concatenate((info, info_plus_high), axis=1)
+            info_high = np.zeros([1, self.info_plus_size_high], dtype=np.float32)
+            info_high[0] = step_count, minerals, idle_worker, food_remain, worker_count, army_count, \
+                           supply_num, barrack_num, killed_unit_score, killed_structure_score
             feed = {self.minimap: minimap,
                     self.screen: screen,
                     self.info_high: info_high}
@@ -423,8 +436,8 @@ class A3CAgent(object):
             minimap = np.expand_dims(U.preprocess_minimap(minimap), axis=0)
             screen = np.array(obs.observation['feature_screen'], dtype=np.float32)
             screen = np.expand_dims(U.preprocess_screen(screen), axis=0)
-            info = np.zeros([1, self.isize], dtype=np.float32)
-            info[0, obs.observation['available_actions']] = 1
+            # info = np.zeros([1, self.isize], dtype=np.float32)
+            # info[0, obs.observation['available_actions']] = 1
             # info_plus_high: 当前step，矿物，闲置农民，剩余人口，农民数量，军队数量，房子数量，兵营数量，击杀奖励
             step_count = GL.get_value(ind_thread, "num_steps")
             minerals = obs.observation.player.minerals
@@ -436,10 +449,13 @@ class A3CAgent(object):
             barrack_num = GL.get_value(ind_thread, "barrack_num")
             killed_unit_score = obs.observation["score_cumulative"][5]
             killed_structure_score = obs.observation["score_cumulative"][6]
-            info_plus_high = np.zeros([1, self.info_plus_size_high], dtype=np.float32)
-            info_plus_high[0] = step_count, minerals, idle_worker, food_remain, worker_count, army_count, \
-                                supply_num, barrack_num, killed_unit_score, killed_structure_score
-            info_high = np.concatenate((info, info_plus_high), axis=1)
+            # info_plus_high = np.zeros([1, self.info_plus_size_high], dtype=np.float32)
+            # info_plus_high[0] = step_count, minerals, idle_worker, food_remain, worker_count, army_count, \
+            #                     supply_num, barrack_num, killed_unit_score, killed_structure_score
+            # info_high = np.concatenate((info, info_plus_high), axis=1)
+            info_high = np.zeros([1, self.info_plus_size_high], dtype=np.float32)
+            info_high[0] = step_count, minerals, idle_worker, food_remain, worker_count, army_count, \
+                           supply_num, barrack_num, killed_unit_score, killed_structure_score
 
             minimaps.append(minimap)
             screens.append(screen)

@@ -72,8 +72,8 @@ def run_loop(agents, env, max_steps, ind_thread):
                     target_1 = target_pack[0][1]
                     if dir_high == 2 and ind_todo == 3:  # 代表当前要执行的动作是宏动作“build_barrack”中的序号3微动作：造兵营（动作函数42）
                         GL.set_value(ind_thread, "barrack_location_NotSure", [target_1, target_0])
-                        print("Thread ", ind_thread, end=" ")
-                        print("Barrack_location_NotSure: ", [target_1, target_0])
+                        # print("Thread ", ind_thread, end=" ")
+                        # print("Barrack_location_NotSure: ", [target_1, target_0])
                     act_args = []
                     for arg in actions.FUNCTIONS[act_id].args:  # actions是pysc2.lib中的文件 根据act_id获取其可使用的参数，并添加到args中去
                         if arg.name in ('screen', 'minimap', 'screen2'):
@@ -103,6 +103,9 @@ def run_loop(agents, env, max_steps, ind_thread):
                 if dir_high == 2 and ind_todo == 3 and GL.get_value(ind_thread, "ind_micro") != -99:
                     barrack_location = GL.get_value(ind_thread, "barrack_location_NotSure")
                     GL.add_value_list(ind_thread, "barrack_location", barrack_location)
+
+                if num_steps > 3000:  # 人工的胜负条件判断
+                    GL.set_value(ind_thread, "iswin", True)
 
                 # Only for a single player!
                 is_done = (num_steps >= max_steps) or timesteps[0].last()
@@ -145,7 +148,7 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
             step_mul=8,
             agent_interface_format=agent_interface,
             visualize=visualize) as env:
-        env = available_actions_printer.AvailableActionsPrinter(env)
+        # env = available_actions_printer.AvailableActionsPrinter(env)
 
         # Only for a single player!
         counter = GL.get_episode_counter()  # global_episode_counter
@@ -201,8 +204,11 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                     dir_high_buffer_2 = []
 
                 if is_done:  # 最终状态，后续处理，存储数据
+                    iswin_self = GL.get_value(ind_thread, "iswin")
+                    print("=====" * 10)
                     print("Episode_counter: ", counter)
-                    print("obs.reward_isWin:", iswin)
+                    print("state.reward_isWin: ", iswin)
+                    print("self_isWin: ", iswin_self)
                     print('Episode score:  ', score)
                     high_reward_avg = GL.get_value(ind_thread, "sum_high_reward") / num_steps
                     low_reward_avg = GL.get_value(ind_thread, "sum_low_reward") / num_call_step_low
@@ -214,36 +220,36 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                     GL.add_value_list(ind_thread_all, "victory_or_defeat", iswin)
                     GL.add_value_list(ind_thread_all, "episode_score_list", score)
                     # 存储reward_decay，用于调节学习率和epsilon-greedy的衰减程度
-                    high_reward_decay = FLAGS.discount * high_reward_avg
-                    GL.set_value(high_reward_decay)
+                    # high_reward_decay = FLAGS.discount * high_reward_avg
+                    # GL.set_value(high_reward_decay)
                     # global_episode是FLAGS.snapshot_step的倍数+1，或指定回合数
                     # 存单个episode的reward变化，存储网络参数（tf.train.Saver().save(),见a3c_agent），存全局numpy以备急停
                     if (counter % FLAGS.snapshot_step == 1) or (counter in FLAGS.quicksave_step_list):
                         agent.save_model(SNAPSHOT, counter)
                         for i in range(PARALLEL):
                             np.save(
-                                "./DataForAnalysis/low_reward_of_episode" + str(counter) + "thread" + str(i) + ".npy",
-                                GL.get_value(i, "low_reward_of_episode"))
+                                "./DataForAnalysis/reward_of_episode_" + str(counter) + "_thread_" + str(i) + ".npy",
+                                GL.get_value(i, "reward_of_episode"))
                             np.save(
-                                "./DataForAnalysis/high_reward_of_episode" + str(counter) + "thread" + str(i) + ".npy",
-                                GL.get_value(i, "high_reward_of_episode"))
-                            np.save(
-                                "./DataForAnalysis/low_reward_list_thread" + str(i) + "episode" + str(counter) + ".npy",
-                                GL.get_value(i, "reward_low_list"))
-                            np.save("./DataForAnalysis/high_reward_list_thread" + str(i) + "episode" + str(
-                                counter) + ".npy",
-                                    GL.get_value(i, "reward_high_list"))
-                            np.save("./DataForAnalysis/victory_or_defeat_thread" + str(i) + "episode" + str(
-                                counter) + ".npy",
-                                    GL.get_value(i, "victory_or_defeat"))
-                            np.save("./DataForAnalysis/episode_score_list_thread" + str(i) + "episode" + str(
-                                counter) + ".npy",
-                                    GL.get_value(i, "episode_score_list"))
-                        # 存储全episode的累积数据v
+                                "./DataForAnalysis/reward_list_thread_" + str(i) + "_episode_" + str(counter) + ".npy",
+                                GL.get_value(i, "reward_list"))
+                            np.save("./DataForAnalysis/victory_or_defeat_thread_" + str(i) + "_episode_" + str(
+                                counter) + ".npy", GL.get_value(i, "victory_or_defeat"))
+                            np.save("./DataForAnalysis/victory_or_defeat_self_thread_" + str(i) + "_episode_" + str(
+                                counter) + ".npy", GL.get_value(i, "victory_or_defeat_self"))
+                            np.save("./DataForAnalysis/episode_score_list_thread_" + str(i) + "_episode_" + str(
+                                counter) + ".npy", GL.get_value(i, "episode_score_list"))
+
+                        # 存储全episode的累积数据
                         np.save("./DataForAnalysis/victory_or_defeat_thread" + str(ind_thread_all) + "episode" + str(
                             counter) + ".npy", GL.get_value(ind_thread_all, "victory_or_defeat"))
+                        np.save("./DataForAnalysis/victory_or_defeat_self_thread_" + str(
+                            ind_thread_all) + "_episode_" + str(
+                            counter) + ".npy", GL.get_value(ind_thread_all, "victory_or_defeat_self"))
                         np.save("./DataForAnalysis/episode_score_list_thread" + str(ind_thread_all) + "episode" + str(
                             counter) + ".npy", GL.get_value(ind_thread_all, "episode_score_list"))
+                        np.save("./DataForAnalysis/reward_list_thread_" + str(ind_thread_all) + "_episode_" + str(
+                            counter) + ".npy", GL.get_value(ind_thread_all, "reward_list"))
                     if counter >= FLAGS.max_episodes:  # 超过设定的最大训练回合数后，退出循环（等于线程结束）
                         break
 
@@ -254,8 +260,11 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                     counter = GL.get_episode_counter()
                     counter += 1
                     GL.set_episode_counter(counter)
+                    iswin_self = GL.get_value(ind_thread, "iswin")
+                    print("=====" * 10)
                     print("Episode_counter: ", counter)
-                    print("obs.reward_isWin:", recorder[-1].reward)
+                    print("state.reward_isWin: ", iswin)
+                    print("self_isWin: ", iswin_self)
                     print('Episode score:  ', score)
                     GL.add_value_list(ind_thread, "victory_or_defeat", iswin)
                     GL.add_value_list(ind_thread, "reward_high_list",

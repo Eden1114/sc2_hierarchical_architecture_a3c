@@ -95,11 +95,12 @@ def _main(unused_argv):
     if FLAGS.profile:
         print(stopwatch.sw)
     # 数据记录
-    for i in range(PARALLEL):
-        np.save("./DataForAnalysis/low_reward_list_thread" + str(i) + ".npy", GL.get_value(i, "reward_low_list"))
-        np.save("./DataForAnalysis/high_reward_list_thread" + str(i) + ".npy", GL.get_value(i, "reward_high_list"))
-        np.save("./DataForAnalysis/victory_or_defeat_thread" + str(i) + ".npy", GL.get_value(i, "victory_or_defeat"))
-        np.save("./DataForAnalysis/episode_score_list_thread" + str(i) + ".npy", GL.get_value(i, "episode_score_list"))
+    for i in range(PARALLEL + 1):
+        np.save("./DataForAnalysis/reward_list_thread_" + str(i) + ".npy", GL.get_value(i, "reward_list"))
+        np.save("./DataForAnalysis/victory_or_defeat_thread_" + str(i) + ".npy", GL.get_value(i, "victory_or_defeat"))
+        np.save("./DataForAnalysis/victory_or_defeat_self_thread_" + str(i) + ".npy",
+                GL.get_value(i, "victory_or_defeat_self"))
+        np.save("./DataForAnalysis/episode_score_list_thread_" + str(i) + ".npy", GL.get_value(i, "episode_score_list"))
     print('Fin. ')
 
 

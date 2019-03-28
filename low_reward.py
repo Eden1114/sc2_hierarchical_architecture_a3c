@@ -69,7 +69,7 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
         if reward < -1000:
             reward = -1000
         reward = float(reward / 1000)
-        if reward != 0:
+        if reward > 0.5:
             print("build_barrack_reward: %.4f" % reward)
         return reward
 
@@ -100,7 +100,7 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
             if reward < -1000:
                 reward = -1000
             reward = float(reward / 1000)
-            if reward != 0:
+            if reward > 0.5:
                 print("Low_reward_def is %.4f" % reward)
 
         # 对敌方操作
@@ -122,7 +122,7 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
             if reward < -1000:
                 reward = -1000
             reward = float(reward / 1000)
-            if reward != 0:
+            if reward > 0.5:
                 print("Low_reward_atk is %.4f" % reward)
         return reward
 
@@ -158,7 +158,7 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
             if reward < -1000:
                 reward = -1000
             reward = float(reward / 1000)
-            if reward != 0:
+            if reward > 0.5:
                 print("Low_reward_scr is %.4f" % reward)
 
         # 对敌方操作
