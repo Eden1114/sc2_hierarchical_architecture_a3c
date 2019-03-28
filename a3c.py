@@ -28,7 +28,7 @@ class A3C:    # 仅实现a3c算法的相关逻辑(save/load, step和update的fee
         self.info_size_high = 10
         # 当前step，矿物，闲置农民，剩余人口，农民数量，军队数量，房子数量，兵营数量，击杀单位奖励，击杀建筑奖励
         self.info_size_low = 5
-        phi_net = PHI(sess, self.action_num, self.learning_rate, self.minimap_size, self.screen_size, self.info_size_high, self.info_size_low)
+        phi_net = PHI(sess, reuse, self.action_num, self.learning_rate, self.minimap_size, self.screen_size, self.info_size_high, self.info_size_low)
 
         # 每个agent单独的观测传参
         self.minimap = tf.placeholder(tf.float32, [None, prep.minimap_channel(), 64, 64])

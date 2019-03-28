@@ -14,7 +14,7 @@ import preprocess as prep
 
 
 class PHI:
-    def __init__(self, sess, macro_action_num, lr, minimap_size, screen_size, info_size_high, info_size_low):
+    def __init__(self, sess, reuse, macro_action_num, lr, minimap_size, screen_size, info_size_high, info_size_low):
         self.action_num = macro_action_num  # high输出宏动作id，low输出location
         self.sess = sess
         self.learning_rate = lr
@@ -36,6 +36,9 @@ class PHI:
 
         with tf.variable_scope('phi') and tf.device('/gpu:0'):
             # 网络定义
+            if reuse:
+                tf.get_variable_scope().reuse_variables()
+                assert tf.get_variable_scope().reuse
             self.action_high, self.value_high,  self.a_params_high, self.c_params_high = self.build_net_high()
             self.action_low, self.value_low, self.a_params_low, self.c_params_low = self.build_net_low()
 
