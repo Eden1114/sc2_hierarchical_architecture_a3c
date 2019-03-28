@@ -57,22 +57,24 @@ def preprocess_screen(screen):
 def minimap_channel():
     c = 0
     for i in range(len(features.MINIMAP_FEATURES)):
-        if i == _MINIMAP_PLAYER_ID:
-            c += 1
-        elif features.MINIMAP_FEATURES[i].type == features.FeatureType.SCALAR:
-            c += 1
-        else:
-            c += features.MINIMAP_FEATURES[i].scale
+        if i in _REQUIRED_MINIMAP:
+            if i == _MINIMAP_PLAYER_ID:
+                c += 1
+            elif features.MINIMAP_FEATURES[i].type == features.FeatureType.SCALAR:
+                c += 1
+            else:
+                c += features.MINIMAP_FEATURES[i].scale
     return c
 
 
 def screen_channel():
     c = 0
     for i in range(len(features.SCREEN_FEATURES)):
-        if i == _SCREEN_PLAYER_ID or i == _SCREEN_UNIT_TYPE:
-            c += 1
-        elif features.SCREEN_FEATURES[i].type == features.FeatureType.SCALAR:
-            c += 1
-        else:
-            c += features.SCREEN_FEATURES[i].scale
+        if i in _REQUIRED_SCREEN:
+            if i == _SCREEN_PLAYER_ID or i == _SCREEN_UNIT_TYPE:
+                c += 1
+            elif features.SCREEN_FEATURES[i].type == features.FeatureType.SCALAR:
+                c += 1
+            else:
+                c += features.SCREEN_FEATURES[i].scale
     return c

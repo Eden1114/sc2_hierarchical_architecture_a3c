@@ -70,6 +70,7 @@ class A3CAgent(object):
             self.minimap = tf.placeholder(tf.float32, [None, U.minimap_channel(), self.msize, self.msize],
                                           name='minimap')
             self.screen = tf.placeholder(tf.float32, [None, U.screen_channel(), self.ssize, self.ssize], name='screen')
+            print('minimap, screen channel: ', U.minimap_channel(), U.screen_channel())
             # self.info_high = tf.placeholder(tf.float32, [None, self.isize + self.info_plus_size_high], name='info_high')
             # self.info_low = tf.placeholder(tf.float32, [None, self.isize + self.info_plus_size_low], name='info_low')
             self.info_high = tf.placeholder(tf.float32, [None, self.info_plus_size_high], name='info_high')
