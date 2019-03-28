@@ -25,6 +25,7 @@ class PHI:
         self.info_size_low = info_size_low
         # 当前step，房子数量，兵营数量，击杀单位奖励，击杀建筑奖励
         # feed_dict = {minimap, screen, info_high, info_low, dir_high, act_id}
+        # 下面的[None, ]，应该是为了读取buffer用的。如果我们改变了buffer的定义，这里可以改变
         self.minimap = tf.placeholder(tf.float32, [None, prep.minimap_channel(), self.minimap_size, self.minimap_size])
         self.screen = tf.placeholder(tf.float32, [None, prep.screen_channel(), self.screen_size, self.screen_size])
         # self.info = tf.placeholder(tf.float32, [None, self.action_num])   # 把所有的info（available_actions）都去除了
