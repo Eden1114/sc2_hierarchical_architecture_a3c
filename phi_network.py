@@ -103,11 +103,11 @@ class PHI:
                 value_high = tf.reshape(layers.fully_connected(critic_hidden_high, 1, activation_fn=tf.tanh, scope='value_high'), [-1])
 
             actor_params_high = tf.get_collection(
-                tf.GraphKeys.TRAINABLE_VARIABLES, scope='actor_high')
+                tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_high/actor_high')
             critic_params_high = tf.get_collection(
-                tf.GraphKeys.TRAINABLE_VARIABLES, scope='critic_high')
+                tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_high/critic_high')
             feature_params_high = tf.get_collection(
-                tf.GraphKeys.TRAINABLE_VARIABLES, scope='feature_high')
+                tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_high/feature_high')
             # 可以在此处重新定义更新参数的方法（考虑为feature_high单独设计梯度）
             a_params_high = actor_params_high + feature_params_high
             c_params_high = critic_params_high + feature_params_high
@@ -143,11 +143,11 @@ class PHI:
                 value_low = tf.reshape(layers.fully_connected(critic_hidden_low, 1, activation_fn=tf.tanh, scope='value_low'), [-1])
 
             actor_params_low = tf.get_collection(
-                tf.GraphKeys.TRAINABLE_VARIABLES, scope='actor_low')
+                tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_low/actor_low')
             critic_params_low = tf.get_collection(
-                tf.GraphKeys.TRAINABLE_VARIABLES, scope='critic_low')
+                tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_low/critic_low')
             feature_params_low = tf.get_collection(
-                tf.GraphKeys.TRAINABLE_VARIABLES, scope='feature_low')
+                tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_low/feature_low')
             # 可以在此处重新定义更新参数的方法（考虑为feature_high单独设计梯度）
             a_params_low = actor_params_low + feature_params_low
             c_params_low = critic_params_low + feature_params_low
