@@ -33,9 +33,6 @@ class PHI:
         self.act_id = tf.placeholder(tf.float32, [1, 1], name='act_id')
 
         with tf.variable_scope('phi') and tf.device('/gpu:0'):
-
-
-
             # ———————————————— 决策层 —————————————————— #
 
             self.q_value = tf.reshape(layers.fully_connected(flatten_feature, 1, activation_fn=None,
@@ -85,7 +82,6 @@ class PHI:
             self.train_op = opt.apply_gradients(cliped_grad)
             self.saver = tf.train.Saver(max_to_keep=100)  # 定义self.saver 为 tf的存储器Saver()，在save_model和load_model函数里使用
 
-
     def build_net_high(self):
         with tf.variable_scope('network_high'):
             with tf.variable_scope('feature_high'):
@@ -97,13 +93,32 @@ class PHI:
                                                    name='info_high')
 
                 full_concat = tf.concat([layers.flatten(mconv2), layers.flatten(sconv2), info_high], axis=1)
-                full_feature_high = layers.fully_connected(full_concat, 256, activation_fn=tf.nn.relu,
-                                                              name='flatten_feature')
-                conv_concat = tf.concat([mconv2, sconv2], axis=3)
-                conv_feature_high = layers.conv2d(conv_concat, 1, 1, activation_fn=None, name='conv_feature')
+                full_feature_high = layers.fully_connected(full_concat, 128, activation_fn=None,
+                                                           name='full_feature_high')
+                # conv_concat = tf.concat([mconv2, sconv2], axis=3)
+                # conv_feature_high = layers.conv2d(conv_concat, 1, 1, activation_fn=None, name='conv_feature_high')
             with tf.variable_scope('actor_high'):
+                actor_hidden_high = layers.fully_connected(full_feature_high, 32, activation_fn=tf.nn.relu,
+                                                           name='actor_hidden_high')
+                dir_high = layers.fully_connected(actor_hidden_high, self.action_num, activation_fn=tf.nn.softmax,
+                                                  name='dir_high')
+            with tf.variable_scope('critic_high'):
+                critic_hidden_high = layers.fully_connected(full_feature_high, 32, activation_fn=tf.nn.relu,
+                                                           name='critic_hidden_high')
+                value_high = tf.reshape(layers.fully_connected(critic_hidden_high, 1, activation_fn=tf.tanh, name='value_high'), [-1])
 
+            actor_params_high = tf.get_collection(
+                tf.GraphKeys.TRAINABLE_VARIABLES, scope='actor_high')
+            critic_params_high = tf.get_collection(
+                tf.GraphKeys.TRAINABLE_VARIABLES, scope='critic_high')
+            feature_params_high = tf.get_collection(
+                tf.GraphKeys.TRAINABLE_VARIABLES, scope='feature_high')
+            # 可以在此处重新定义更新参数的方法（考虑为feature_high单独设计梯度）
+            a_params_high = actor_params_high + feature_params_high
+            c_params_high = critic_params_high + feature_params_high
+            print('a_params_high: ', a_params_high)
 
+            return dir_high, value_high, a_params_high, c_params_high
 
     def build_net_low(self):
         with tf.variable_scope('network_low'):
@@ -116,8 +131,29 @@ class PHI:
                                                   name='info_low')
 
                 full_concat = tf.concat([layers.flatten(mconv2), layers.flatten(sconv2), info_low], axis=1)
-                full_feature_low = layers.fully_connected(full_concat, 256, activation_fn=tf.nn.relu,
-                                                             name='flatten_feature')
+                full_feature_low = layers.fully_connected(full_concat, 128, activation_fn=None,
+                                                          name='full_feature_low')
+                # conv_concat = tf.concat([mconv2, sconv2], axis=3)
+                # conv_feature_low = layers.conv2d(conv_concat, 1, 1, activation_fn=None, name='conv_feature_low')
+            with tf.variable_scope('actor_low'):
+                actor_hidden_low = layers.fully_connected(full_feature_low, 32, activation_fn=tf.nn.relu,
+                                                           name='actor_hidden_high')
+                dir_high = layers.fully_connected(actor_hidden_high, self.action_num, activation_fn=tf.nn.softmax,
+                                                  name='dir_high')
+            with tf.variable_scope('critic_high'):
+                critic_hidden_high = layers.fully_connected(full_feature_high, 32, activation_fn=tf.nn.relu,
+                                                           name='critic_hidden_high')
+                value_high = tf.reshape(layers.fully_connected(critic_hidden_high, 1, activation_fn=tf.tanh, name='value_high'), [-1])
 
-                conv_concat = tf.concat([mconv2, sconv2], axis=3)
-                conv_feature_low = layers.conv2d(conv_concat, 1, 1, activation_fn=None, name='conv_feature')
+            actor_params_high = tf.get_collection(
+                tf.GraphKeys.TRAINABLE_VARIABLES, scope='actor_high')
+            critic_params_high = tf.get_collection(
+                tf.GraphKeys.TRAINABLE_VARIABLES, scope='critic_high')
+            feature_params_high = tf.get_collection(
+                tf.GraphKeys.TRAINABLE_VARIABLES, scope='feature_high')
+            # 可以在此处重新定义更新参数的方法（考虑为feature_high单独设计梯度）
+            a_params_high = actor_params_high + feature_params_high
+            c_params_high = critic_params_high + feature_params_high
+            print('a_params_high: ', a_params_high)
+
+            return dir_high, value_high, a_params_high, c_params_high
