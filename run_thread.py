@@ -104,7 +104,7 @@ def run_loop(agents, env, max_steps, ind_thread):
                     barrack_location = GL.get_value(ind_thread, "barrack_location_NotSure")
                     GL.add_value_list(ind_thread, "barrack_location", barrack_location)
 
-                if num_steps > 3000:  # 人工的胜负条件判断
+                if num_steps > 3000 or timesteps[0].reward == 1:  # 人工的胜负条件判断
                     GL.set_value(ind_thread, "iswin", True)
 
                 # Only for a single player!
