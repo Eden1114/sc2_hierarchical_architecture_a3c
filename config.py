@@ -11,7 +11,7 @@ def config_init():
     # flags.DEFINE_bool("continuation", True, "Continuously training.")  # 继续训练
     flags.DEFINE_float("learning_rate", 5e-4, "Learning rate for training.")
     flags.DEFINE_float("discount", 0.99, "Discount rate for future rewards.")
-    flags.DEFINE_integer("max_episodes", int(1000), "Total episodes for training.")  # 训练的最大回合episode数
+    flags.DEFINE_integer("max_episodes", int(1), "Total episodes for training.")  # 训练的最大回合episode数
     flags.DEFINE_integer("snapshot_step", int(50), "Step for snapshot.")  # 存储snapshot快照和numpy数据的iter
     flags.DEFINE_list("quicksave_step_list", [10, 20, 30, 40, 60, 70, 80, 90], "Additional data-saving step list ")
     flags.DEFINE_string("snapshot_path", "./snapshot/", "Path for snapshot.")
