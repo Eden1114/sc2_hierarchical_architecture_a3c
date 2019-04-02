@@ -224,7 +224,7 @@ class A3C:    # 仅实现a3c算法的相关逻辑(save/load, step和update的fee
     def update(self, buffer, episode, thread_index):
         last_state = buffer[-1][-1]
         if last_state.last():
-            R = 0  # TODO R设置的具体意义？
+            R = 0
         else:
             minimap = prep.preprocess_minimap(last_state.observation['feature_minimap'])
             screen = prep.preprocess_screen(last_state.observation['feature_screen'])
@@ -250,6 +250,10 @@ class A3C:    # 仅实现a3c算法的相关逻辑(save/load, step和update的fee
             # 求解每个step的minimap、screen、info（已去除）、reward
             minimap = prep.preprocess_minimap(state.observation['feature_minimap'])
             screen = prep.preprocess_screen(state.observation['feature_screen'])
+            np.save("./DataForAnalysis/minimap_of_episode_" + str(episode) + "_thread_" + str(thread_index) + ".npy",
+                    minimap)
+            np.save("./DataForAnalysis/screen_of_episode_" + str(episode) + "_thread_" + str(thread_index) + ".npy",
+                    screen)
             # info = np.zeros([1, self.action_num], dtype=np.float32)
             # info[0, state.observation['available_actions']] = 1
 
@@ -282,7 +286,7 @@ class A3C:    # 仅实现a3c算法的相关逻辑(save/load, step和update的fee
         q_target_value = np.zeros([len(buffer)], dtype=np.float32)
         running_add = R
         for j in reversed(range(0, len(rewards))):
-            running_add = rewards[j] + 0.99 * running_add
+            running_add = rewards[j] + 0.99 * running_add    # gamma = 0.99
             q_target_value[j] = running_add
 
         feed = {self.minimap: minimaps,
