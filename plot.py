@@ -89,8 +89,8 @@ Python-Matplotlib 9 颜色和样式
 # tmp1 = np.load('./DataForAnalysis/reward_list_thread_4.npy')
 # tmp2 = np.load('./DataForAnalysis/episode_score_list_thread_4.npy')
 
-# tmp0 = np.load('./DataForAnalysis/feature_minimap_episode_2160.npy')
-# tmp1 = np.load('./DataForAnalysis/minimap_episode_2160.npy')
+tmp0 = np.load('./DataForAnalysis/minimap_of_step_1700.npy')
+tmp1 = np.load('./DataForAnalysis/screen_of_step_1700.npy')
 
 # print(len(tmp0))
 # print(tmp0)
@@ -104,7 +104,7 @@ Python-Matplotlib 9 颜色和样式
 
 print(tmp0.shape)
 print(tmp1.shape)
-print(tmp1[0][0].shape)
+# print(tmp1[0][0].shape)
 # count = 0
 # for i in tmp0 :
 #     if i > -1:
@@ -121,6 +121,7 @@ print(tmp1[0][0].shape)
 
 # plt.matshow(tmp0[6])
 plt.matshow(tmp1[0][10])
+# screen: 7号是我方单位和建筑【取值为1】，10号是敌方单位【取值为1】
 
 # x1 = []
 # y1 = []

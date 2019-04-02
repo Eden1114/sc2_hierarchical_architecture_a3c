@@ -113,6 +113,16 @@ class A3C:
         # 以下4行将minimap和screen的特征做一定处理后分别保存在minimap和screen变量中，为了与placeholder匹配，功能未研究
         minimap = prep.preprocess_minimap(state.observation['feature_minimap'])
         screen = prep.preprocess_screen(state.observation['feature_screen'])
+        num_step = GL.get_value(thread_index, "num_steps")
+        if num_step % 20 == 0:
+            np.save("./DataForAnalysis/minimap_of_step_" + str(num_step) + ".npy",
+                    state.observation['feature_minimap'])
+            np.save("./DataForAnalysis/screen_of_step_" + str(num_step) + ".npy",
+                    state.observation['feature_screen'])
+            np.save("./DataForAnalysis/prep-minimap_of_step_" + str(num_step)  + ".npy",
+                    minimap)
+            np.save("./DataForAnalysis/prep-screen_of_step_" + str(num_step) + ".npy",
+                    screen)
         # info = np.zeros([1, self.action_num], dtype=np.float32)
         # info[0, state.observation['available_actions']] = 1  
         feed = {self.minimap: minimap, self.screen: screen}  # self.info: info
@@ -347,7 +357,7 @@ def run(agent, max_episode, map_name, thread_index, flags, snapshot_path):
             state = next_state
 
         # 存储episode数据
-        episode_log(state, episode, thread_index, counter, thread_index_all, flags, snapshot_path, agent)
+        # episode_log(state, episode, thread_index, counter, thread_index_all, flags, snapshot_path, agent)
         if episode > max_episode:
             env.close()
             break
