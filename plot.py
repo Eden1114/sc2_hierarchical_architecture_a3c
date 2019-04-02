@@ -89,8 +89,10 @@ Python-Matplotlib 9 颜色和样式
 # tmp1 = np.load('./DataForAnalysis/reward_list_thread_4.npy')
 # tmp2 = np.load('./DataForAnalysis/episode_score_list_thread_4.npy')
 
-tmp0 = np.load('./DataForAnalysis/minimap_of_step_1700.npy')
-tmp1 = np.load('./DataForAnalysis/screen_of_step_1700.npy')
+tmp0 = np.load('./DataForAnalysis/minimap_of_step_1200.npy')
+tmp1 = np.load('./DataForAnalysis/screen_of_step_1200.npy')
+tmp2 = np.load('./DataForAnalysis/prep-minimap_of_step_1200.npy')
+tmp3 = np.load('./DataForAnalysis/prep-screen_of_step_1200.npy')
 
 # print(len(tmp0))
 # print(tmp0)
@@ -104,6 +106,8 @@ tmp1 = np.load('./DataForAnalysis/screen_of_step_1700.npy')
 
 print(tmp0.shape)
 print(tmp1.shape)
+print(tmp2.shape)
+print(tmp3.shape)
 # print(tmp1[0][0].shape)
 # count = 0
 # for i in tmp0 :
@@ -119,9 +123,13 @@ print(tmp1.shape)
 #     for j in range(64):
 #         x0.append(tmp0[5][j][i])
 
-# plt.matshow(tmp0[6])
-plt.matshow(tmp1[0][10])
-# screen: 7号是我方单位和建筑【取值为1】，10号是敌方单位【取值为1】
+show0 = plt.matshow(tmp0[4])
+show1 = plt.matshow(tmp1[4])
+show2 = plt.matshow(tmp2[0][12])
+show3 = plt.matshow(tmp3[0][10])
+# screen_channel: 7号是我方单位和建筑【取值为1】，10号是敌方单位【取值为1】
+# minimap_channel: 9号是我方单位和建筑【取值为1】，12号是敌方单位【取值为1】
+# x向右为正，y向下为正
 
 # x1 = []
 # y1 = []
@@ -148,3 +156,6 @@ plt.matshow(tmp1[0][10])
 # plt.plot(np.arange(len(tmp41)), tmp38, 'g-')
 # plt.plot(np.arange(len(tmp3)) + 1006, tmp3, 'b-')
 plt.show()
+# plt.show(show1)
+# plt.show(show2)
+# plt.show(show3)
