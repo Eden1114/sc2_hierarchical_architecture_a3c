@@ -211,7 +211,10 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                     print("self_isWin: ", iswin_self)
                     print('Episode score:  ', score)
                     high_reward_avg = GL.get_value(ind_thread, "sum_high_reward") / num_steps
-                    low_reward_avg = GL.get_value(ind_thread, "sum_low_reward") / num_call_step_low
+                    if num_call_step_low == 0:
+                        low_reward_avg = GL.get_value(ind_thread, "sum_low_reward")
+                    else:
+                        low_reward_avg = GL.get_value(ind_thread, "sum_low_reward") / num_call_step_low
                     GL.add_value_list(ind_thread, "victory_or_defeat", iswin)
                     GL.add_value_list(ind_thread, "victory_or_defeat_self", iswin_self)
                     GL.add_value_list(ind_thread, "reward_high_list", high_reward_avg)
@@ -233,8 +236,12 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                                 "./DataForAnalysis/reward_of_episode_" + str(counter) + "_thread_" + str(i) + ".npy",
                                 GL.get_value(i, "reward_of_episode"))
                             np.save(
-                                "./DataForAnalysis/reward_list_thread_" + str(i) + "_episode_" + str(counter) + ".npy",
-                                GL.get_value(i, "reward_list"))
+                                "./DataForAnalysis/reward_high_list_thread_" + str(i) + "_episode_" + str(counter) + ".npy",
+                                GL.get_value(i, "reward_high_list"))
+                            np.save(
+                                "./DataForAnalysis/reward_low_list_thread_" + str(i) + "_episode_" + str(
+                                    counter) + ".npy",
+                                GL.get_value(i, "reward_low_list"))
                             np.save("./DataForAnalysis/victory_or_defeat_thread_" + str(i) + "_episode_" + str(
                                 counter) + ".npy", GL.get_value(i, "victory_or_defeat"))
                             np.save("./DataForAnalysis/victory_or_defeat_self_thread_" + str(i) + "_episode_" + str(
@@ -250,8 +257,13 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                             counter) + ".npy", GL.get_value(ind_thread_all, "victory_or_defeat_self"))
                         np.save("./DataForAnalysis/episode_score_list_thread" + str(ind_thread_all) + "episode" + str(
                             counter) + ".npy", GL.get_value(ind_thread_all, "episode_score_list"))
-                        np.save("./DataForAnalysis/reward_list_thread_" + str(ind_thread_all) + "_episode_" + str(
-                            counter) + ".npy", GL.get_value(ind_thread_all, "reward_list"))
+                        np.save(
+                            "./DataForAnalysis/reward_high_list_thread_" + str(ind_thread_all) + "_episode_" + str(counter) + ".npy",
+                            GL.get_value(i, "reward_high_list"))
+                        np.save(
+                            "./DataForAnalysis/reward_low_list_thread_" + str(ind_thread_all) + "_episode_" + str(
+                                counter) + ".npy",
+                            GL.get_value(i, "reward_low_list"))
                     if counter >= FLAGS.max_episodes:  # 超过设定的最大训练回合数后，退出循环（等于线程结束）
                         break
 
