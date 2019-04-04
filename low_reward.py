@@ -5,12 +5,12 @@ import globalvar as GL
 def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, ind_thread):
     reward = 0
     # 坐标x方向向右为正，y方向向下为正，左上角是[0, 0]
-    base = [20, 25]  # minimap
-    enemy = [44, 39]  # minimap
-    enemy_2 = [20, 39]  # minimap
-    defense = [40, 25]  # minimap
-    defense_base = [25, 25]  # minimap
-    barrack = [15, 35]  # screen
+    base = [19, 22]  # minimap
+    enemy = [40, 45]  # minimap
+    enemy_2 = [15, 47]  # minimap
+    defense = [40, 20]  # minimap
+    defense_base = [29, 20]  # minimap
+    barrack = [15, 40]  # screen
     supply = [40, 25]  # screen
     build_score_change = next_obs.observation["score_cumulative"][4] - obs.observation["score_cumulative"][4]
     killed_score_units_change = 10 * (
@@ -32,13 +32,13 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
     # build_supply
     if dir_high == 1:
         dis = math.sqrt((coordinate[0] - supply[0]) ** 2 + (coordinate[1] - supply[1]) ** 2)
-        if 1 < dis <= 5:  # 0305
+        if 1 < dis <= 3:  # 0305
             # reward = 500
-            reward += 100 - dis * 20
+            reward += 1000 - dis * 300
         elif dis <= 1:
             reward = 0
         else:
-            reward -= dis * 100
+            reward -= dis * 300
 
         if build_score_change == 100:
             reward += 300
@@ -55,11 +55,11 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
         dis = math.sqrt((coordinate[0] - barrack[0]) ** 2 + (coordinate[1] - barrack[1]) ** 2)
         if 2 < dis <= 5:  # 0305
             # reward = 500
-            reward += 100 - dis * 20
+            reward += 1000 - dis * 200
         elif dis <= 2:
             reward = 0
         else:
-            reward += 100 - dis * 10
+            reward += 1000 - dis * 300
 
         if build_score_change == 150:
             reward += 500
@@ -110,7 +110,7 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
             dis_def = math.sqrt((coordinate[0] - defense[0]) ** 2 + (coordinate[1] - defense[1]) ** 2)
             dis_def_base = math.sqrt((coordinate[0] - defense_base[0]) ** 2 + (coordinate[1] - defense_base[1]) ** 2)
             dis = min(dis_atk, dis_atk_2, dis_def, dis_def_base)
-            reward += 200 - dis * 5
+            reward += 500 - dis * 40
 
             if killed_score_units_change > 0:
                 reward += 10 * killed_score_units_change
