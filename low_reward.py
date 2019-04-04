@@ -10,8 +10,8 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
     enemy_2 = [15, 47]  # minimap
     defense = [40, 20]  # minimap
     defense_base = [29, 20]  # minimap
-    barrack = [15, 40]  # screen
-    supply = [40, 25]  # screen
+    barrack = [20, 40]  # screen
+    supply = [40, 22]  # screen
     build_score_change = next_obs.observation["score_cumulative"][4] - obs.observation["score_cumulative"][4]
     killed_score_units_change = 10 * (
             next_obs.observation["score_cumulative"][5] - obs.observation["score_cumulative"][5])
@@ -113,9 +113,9 @@ def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, 
             reward += 500 - dis * 40
 
             if killed_score_units_change > 0:
-                reward += 10 * killed_score_units_change
+                reward += 100 * killed_score_units_change
             if killed_score_structures_change > 0:
-                reward += 10 * killed_score_structures_change
+                reward += 100 * killed_score_structures_change
 
             if reward > 1000:
                 reward = 1000
