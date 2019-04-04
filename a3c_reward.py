@@ -19,12 +19,12 @@ def a3c_reward(ind_thread, next_obs, obs, micro_isdone, coordinate, macro_id, ma
     food_remain = next_obs.observation["player"][4] - next_obs.observation["player"][3]  # 剩余人口
     step = GL.get_value(ind_thread, "num_steps")  # 当前的步数，1秒2.8步，50步约为18s
     # 坐标x方向向右为正，y方向向下为正，左上角是[0, 0]
-    base = [20, 25]  # minimap
-    enemy = [44, 39]  # minimap
-    enemy_2 = [20, 39]  # minimap
-    defense = [40, 25]  # minimap
-    defense_base = [25, 25]  # minimap
-    barrack = [15, 35]  # screen
+    base = [19, 22]  # minimap
+    enemy = [40, 45]  # minimap
+    enemy_2 = [15, 47]  # minimap
+    defense = [40, 20]  # minimap
+    defense_base = [29, 20]  # minimap
+    barrack = [15, 40]  # screen
     supply = [40, 25]  # screen
     build_score_change = next_obs.observation["score_cumulative"][4] - obs.observation["score_cumulative"][4]
     killed_score_units_change = 10 * (
