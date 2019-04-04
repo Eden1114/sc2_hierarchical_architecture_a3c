@@ -250,12 +250,12 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                                 counter) + ".npy", GL.get_value(i, "episode_score_list"))
 
                         # 存储全episode的累积数据
-                        np.save("./DataForAnalysis/victory_or_defeat_thread" + str(ind_thread_all) + "episode" + str(
+                        np.save("./DataForAnalysis/victory_or_defeat_thread_" + str(ind_thread_all) + "episode" + str(
                             counter) + ".npy", GL.get_value(ind_thread_all, "victory_or_defeat"))
                         np.save("./DataForAnalysis/victory_or_defeat_self_thread_" + str(
                             ind_thread_all) + "_episode_" + str(
                             counter) + ".npy", GL.get_value(ind_thread_all, "victory_or_defeat_self"))
-                        np.save("./DataForAnalysis/episode_score_list_thread" + str(ind_thread_all) + "episode" + str(
+                        np.save("./DataForAnalysis/episode_score_list_thread_" + str(ind_thread_all) + "episode" + str(
                             counter) + ".npy", GL.get_value(ind_thread_all, "episode_score_list"))
                         np.save(
                             "./DataForAnalysis/reward_high_list_thread_" + str(ind_thread_all) + "_episode_" + str(counter) + ".npy",
