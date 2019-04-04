@@ -24,9 +24,9 @@ def build_high_net(minimap, screen, info, num_macro_action):
         with tf.variable_scope('actor_high'):
             actor_hidden_high = layers.fully_connected(full_feature_high, 64, activation_fn=tf.nn.relu,
                                                        scope='actor_hidden_high_1')
-            actor_hidden_high_2 = layers.fully_connected(actor_hidden_high, 32, activation_fn=tf.nn.relu,
-                                                         scope='actor_hidden_high_2')
-            action_high = layers.fully_connected(actor_hidden_high_2, num_macro_action, activation_fn=tf.nn.softmax,
+            # actor_hidden_high_2 = layers.fully_connected(actor_hidden_high, 32, activation_fn=tf.nn.relu,
+            #                                              scope='actor_hidden_high_2')
+            action_high = layers.fully_connected(actor_hidden_high, num_macro_action, activation_fn=tf.nn.softmax,
                                                  scope='dir_high')
         with tf.variable_scope('critic_high'):
             critic_hidden_high = layers.fully_connected(full_feature_high, 32, activation_fn=tf.tanh,
@@ -67,9 +67,9 @@ def build_low_net(minimap, screen, info, dir_high, act_id):
         with tf.variable_scope('actor_low'):
             actor_hidden_low = layers.fully_connected(full_feature_low, 256, activation_fn=tf.nn.relu,
                                                       scope='actor_hidden_low_1')
-            actor_hidden_low_2 = layers.fully_connected(actor_hidden_low, 1024, activation_fn=tf.nn.relu,
-                                                        scope='actor_hidden_low_2')
-            action_low = layers.fully_connected(actor_hidden_low_2, 4096, activation_fn=tf.nn.softmax,
+            # actor_hidden_low_2 = layers.fully_connected(actor_hidden_low, 1024, activation_fn=tf.nn.relu,
+            #                                             scope='actor_hidden_low_2')
+            action_low = layers.fully_connected(actor_hidden_low, 4096, activation_fn=tf.nn.softmax,
                                                 scope='action_low')
         with tf.variable_scope('critic_high'):
             critic_hidden_low = layers.fully_connected(full_feature_low, 32, activation_fn=tf.tanh,
