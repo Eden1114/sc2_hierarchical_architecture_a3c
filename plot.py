@@ -89,10 +89,10 @@ Python-Matplotlib 9 颜色和样式
 # tmp1 = np.load('./DataForAnalysis/reward_list_thread_4.npy')
 # tmp2 = np.load('./DataForAnalysis/episode_score_list_thread_4.npy')
 
-tmp0 = np.load('./DataForAnalysis/minimap_of_step_1200.npy')
-tmp1 = np.load('./DataForAnalysis/screen_of_step_1200.npy')
-tmp2 = np.load('./DataForAnalysis/prep-minimap_of_step_1200.npy')
-tmp3 = np.load('./DataForAnalysis/prep-screen_of_step_1200.npy')
+tmp0 = np.load('./minimap_of_step_1200.npy')
+tmp1 = np.load('./screen_of_step_1200.npy')
+tmp2 = np.load('./prep-minimap_of_step_1200.npy')
+tmp3 = np.load('./prep-screen_of_step_1200.npy')
 
 # print(len(tmp0))
 # print(tmp0)
