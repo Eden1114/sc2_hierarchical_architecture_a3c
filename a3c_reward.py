@@ -140,13 +140,13 @@ def reward_high(ind_thread, next_obs, obs, micro_isdone):
 def reward_low(ind_thread, next_obs, obs, coordinate, macro_type, coord_type, macro_id):
     reward = 0.0
     # 坐标x方向向右为正，y方向向下为正，左上角是[0, 0]
-    base = [20, 25]  # minimap
-    enemy = [44, 39]  # minimap
-    enemy_2 = [20, 39]  # minimap
-    defense = [40, 25]  # minimap
-    defense_base = [25, 25]  # minimap
-    barrack = [15, 35]  # screen
-    supply = [40, 25]  # screen
+    base = [19, 22]  # minimap
+    enemy = [40, 45]  # minimap
+    enemy_2 = [15, 47]  # minimap
+    defense = [40, 20]  # minimap
+    defense_base = [29, 20]  # minimap
+    barrack = [20, 40]  # screen
+    supply = [40, 22]  # screen
     build_score_change = next_obs.observation["score_cumulative"][4] - obs.observation["score_cumulative"][4]
     killed_score_units_change = 10 * (
             next_obs.observation["score_cumulative"][5] - obs.observation["score_cumulative"][5])
@@ -166,13 +166,13 @@ def reward_low(ind_thread, next_obs, obs, coordinate, macro_type, coord_type, ma
     # build_supply
     if macro_id == 1:
         dis = math.sqrt((coordinate[0] - supply[0]) ** 2 + (coordinate[1] - supply[1]) ** 2)
-        if 1 < dis <= 5:  # 0305
+        if 1 < dis <= 3:  # 0305
             # reward = 500
-            reward += 100 - dis * 20
+            reward += 1000 - dis * 300
         elif dis <= 1:
             reward = 0
         else:
-            reward -= dis * 100
+            reward -= dis * 300
 
         if build_score_change == 100:
             reward += 300
@@ -180,13 +180,12 @@ def reward_low(ind_thread, next_obs, obs, coordinate, macro_type, coord_type, ma
     # build_barrack
     if macro_id == 2:
         dis = math.sqrt((coordinate[0] - barrack[0]) ** 2 + (coordinate[1] - barrack[1]) ** 2)
-        if 2 < dis <= 5:  # 0305
-            # reward = 500
-            reward += 100 - dis * 20
+        if 2 < dis <= 5:
+            reward += 1000 - dis * 200
         elif dis <= 2:
             reward = 0
         else:
-            reward += 100 - dis * 10
+            reward += 1000 - dis * 300
 
         if build_score_change == 150:
             reward += 500
@@ -220,12 +219,12 @@ def reward_low(ind_thread, next_obs, obs, coordinate, macro_type, coord_type, ma
             dis_def_base = math.sqrt(
                 (coordinate[0] - defense_base[0]) ** 2 + (coordinate[1] - defense_base[1]) ** 2)
             dis = min(dis_atk, dis_atk_2, dis_def, dis_def_base)
-            reward += 200 - dis * 5
+            reward += 500 - dis * 40
 
             if killed_score_units_change > 0:
-                reward += 10 * killed_score_units_change
+                reward += 100 * killed_score_units_change
             if killed_score_structures_change > 0:
-                reward += 10 * killed_score_structures_change
+                reward += 100 * killed_score_structures_change
 
     # 坐标类型为screen
     else:
