@@ -71,15 +71,14 @@ def action_micro(ind_thread, dir_high, ind_todo):
         macro_type = 1
         coord_type = 1
         enemy_location_minimap = GL.get_value(ind_thread, "enemy_location_minimap")
-        # if len(enemy_location_minimap) == 0:
-        if len(enemy_location_minimap) != 0:
-            # 从minimap获取不到敌人位置时，地图上随机选择一点进行攻击xxx
-            # 如果没有敌人位置，不作操作，继续执行下层网络计算的位置
-            # location_to_attack = [random.randint(0, 63), random.randint(0, 63)]
-        # else:
+        if len(enemy_location_minimap) == 0:
+            # 从minimap获取不到敌人位置时，call_step_low
+            location_to_attack = [random.randint(0, 63), random.randint(0, 63)]
+            call_step_low = True
+        else:
             # 从minimap上读取的敌人位置中随机选择一点进行攻击
             location_to_attack = random.choice(enemy_location_minimap)
-            action = [actions.FunctionCall(function=13, arguments=[[0], location_to_attack])]
+        action = [actions.FunctionCall(function=13, arguments=[[0], location_to_attack])]
 
     else:
         if dir_high == 5 and ind_todo == 0:
@@ -92,7 +91,7 @@ def action_micro(ind_thread, dir_high, ind_todo):
                 call_step_low = True
             else:
                 act_args.append([0])  # TODO: Be careful
-                action = [actions.FunctionCall(act_id, act_args)]
+        action = [actions.FunctionCall(act_id, act_args)]
 
     # print("action = ", action)
     return action, call_step_low, act_id, macro_type, coord_type  # 如果call_step_low不为1，则返回的action不会被采用；如果call_step_low为1，则返回的action会被采用
