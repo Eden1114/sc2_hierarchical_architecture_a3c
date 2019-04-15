@@ -38,6 +38,12 @@ def run_loop(agents, env, max_steps, ind_thread):
                 num_steps += 1
                 GL.set_value(ind_thread, "num_steps", num_steps)
                 last_timesteps = timesteps
+
+                player_relative_minimap = np.array( last_timesteps[0].observation['feature_minimap'][5] )
+                enemy_location_minimap = np.argwhere(player_relative_minimap == 4)
+                # Number_enemy_location_minimap = np.sum(player_relative_minimap == 4)
+                GL.set_value(ind_thread, "enemy_location_minimap", enemy_location_minimap)
+
                 # saving = GL.get_saving()
                 # if saving:
                 #     time.sleep(120)
@@ -81,7 +87,7 @@ def run_loop(agents, env, max_steps, ind_thread):
                         else:
                             act_args.append([0])  # TODO: Be careful
                         action = [actions.FunctionCall(act_id, act_args)]
-
+                # print("action = ", action)
                 # 校验宏动作：
                 flag_success = True
                 if list_actions[dir_high][ind_todo] not in last_timesteps[0].observation['available_actions']:

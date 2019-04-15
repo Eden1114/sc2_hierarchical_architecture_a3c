@@ -66,8 +66,21 @@ def action_micro(ind_thread, dir_high, ind_todo):
     elif dir_high == 3 and ind_todo == 7:
         action = [actions.FunctionCall(function=3, arguments=[[0], [5, 5], [30, 25]])]  # 框中一些scv
 
+    elif dir_high == 5 and ind_todo == 1:
+        # 更改宏动作类型和坐标类型
+        macro_type = 1
+        coord_type = 1
+        enemy_location_minimap = GL.get_value(ind_thread, "enemy_location_minimap")
+        if len(enemy_location_minimap) == 0:
+            # 从minimap获取不到敌人位置时，地图上随机选择一点进行攻击
+            location_to_attack = [random.randint(0, 63), random.randint(0, 63)]
+        else:
+            # 从minimap上读取的敌人位置中随机选择一点进行攻击
+            location_to_attack = random.choice(enemy_location_minimap)
+        action = [actions.FunctionCall(function=13, arguments=[[0], location_to_attack])]
+
     else:
-        if dir_high == 5:
+        if dir_high == 5 and ind_todo == 0:
             # 更改宏动作类型和坐标类型
             macro_type = 1
             coord_type = 1
@@ -80,5 +93,4 @@ def action_micro(ind_thread, dir_high, ind_todo):
                 action = [actions.FunctionCall(act_id, act_args)]
 
     # print("action = ", action)
-    # return action
     return action, call_step_low, act_id, macro_type, coord_type  # 如果call_step_low不为1，则返回的action不会被采用；如果call_step_low为1，则返回的action会被采用
