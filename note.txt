@@ -1,1 +1,0 @@
-minimap和screen的大小 不论什么地图，始终是64x46

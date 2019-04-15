@@ -1,0 +1,6 @@
+/snapshot/*
+/log/*
+/__pycache__/*
+/.idea/*
+/.vscode/*
+/DataForAnalysis/*
