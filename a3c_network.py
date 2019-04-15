@@ -71,7 +71,7 @@ def build_low_net(minimap, screen, info, dir_high, act_id):
                                                         scope='actor_hidden_low_2')
             action_low = layers.fully_connected(actor_hidden_low_2, 4096, activation_fn=tf.nn.softmax,
                                                 scope='action_low')
-        with tf.variable_scope('critic_high'):
+        with tf.variable_scope('critic_low'):
             critic_hidden_low = layers.fully_connected(full_feature_low, 32, activation_fn=tf.tanh,
                                                        scope='critic_hidden_low')
             value_low = tf.reshape(
