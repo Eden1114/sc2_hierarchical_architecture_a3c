@@ -15,7 +15,8 @@ def global_init(index):
                 "episode_score_list": [], "high_reward_decay": 0,
                 "low_reward_decay": 0, "reward_list": [],
                 "sum_reward": -9999, "reward_of_episode": [], "iswin": False,
-                "victory_or_defeat_self": []}
+                "victory_or_defeat_self": [],
+                "enemy_location_minimap":[]}
         global_var_dict.append(dict)
 
 
@@ -26,6 +27,7 @@ def episode_init(ind_thread):
     set_value(ind_thread, "barrack_num", 0)
     set_value(ind_thread, "iswin", False)
     set_value(ind_thread, "barrack_location", [])
+    set_value(ind_thread, "enemy_location_minimap", [])
     set_value(ind_thread, "sum_high_reward", 0)
     set_value(ind_thread, "sum_low_reward", 0)
     set_value(ind_thread, "sum_reward", 0)
