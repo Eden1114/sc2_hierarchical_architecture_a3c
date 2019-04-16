@@ -6,7 +6,7 @@ import numpy as np
 from pysc2.lib import actions
 from pysc2.lib import features
 
-# TODO: preprocessing functions for the following layers
+# TODO: 设置针对channel的筛选机制
 _MINIMAP_PLAYER_ID = features.MINIMAP_FEATURES.player_id.index
 _SCREEN_PLAYER_ID = features.SCREEN_FEATURES.player_id.index
 _SCREEN_UNIT_TYPE = features.SCREEN_FEATURES.unit_type.index
