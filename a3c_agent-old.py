@@ -79,7 +79,7 @@ class A3CAgent(object):
 
             # Build networks
             # DHN add:
-            self.action_high_prob, self.value_high, self.a_params_high, self.c_params_high = build_high_net(self.minimap,
+            self.dir_high, self.value_high, self.a_params_high, self.c_params_high = build_high_net(self.minimap,
                                                                                                     self.screen,
                                                                                                     self.info_high,
                                                                                                     num_macro_action)
@@ -106,7 +106,7 @@ class A3CAgent(object):
             # spatial_action_selected含义是每一个step需不需要坐标参数（第一维上），且具体坐标参数是什么（第二维上）。spatial_action_selected维度是“更新时历经的step数” x “ssize**2”
             spatial_action_log_prob_low = tf.log(
                 tf.clip_by_value(spatial_action_prob_low, 1e-10, 1.))  # 维度是“更新时历经的step数”
-            dir_prob_high = tf.reduce_sum(self.action_high_prob * self.dir_high_selected, axis=1)
+            dir_prob_high = tf.reduce_sum(self.dir_high * self.dir_high_selected, axis=1)
             dir_log_prob_high = tf.log(tf.clip_by_value(dir_prob_high, 1e-10, 1.))
             self.summary_low.append(tf.summary.histogram('spatial_action_prob_low', spatial_action_prob_low))
             self.summary_high.append(tf.summary.histogram('dir_prob_high', dir_prob_high))
@@ -189,12 +189,13 @@ class A3CAgent(object):
         feed = {self.minimap: minimap,
                 self.screen: screen,
                 self.info_high: info_high}
-        action_high_prob = self.sess.run(self.action_high_prob, feed_dict=feed)
+        dir_high = self.sess.run(
+            [self.dir_high],
+            feed_dict=feed)
         # 选择出宏动作的编号/id
         # DHN待处理： 可以将dir_high先根据一定的方法筛选一下（比如宏动作中的硬编码微动作是否在obs.observation['available_actions']中）
         # valid_dir_high = obs.observation['available_actions']
-        # dir_high_id = np.argmax(action_high_prob)  # 获取要执行的宏动作id（从0开始）
-        dir_high_id = np.random.choice(range(action_high_prob.shape[1]), p=action_high_prob.ravel())  # 获取要执行的宏动作id，用莫凡的代码改进，是policy-based的选择
+        dir_high_id = np.argmax(dir_high)  # 获取要执行的宏动作id（从0开始）
         # Epsilon greedy exploration  # 0.05(epsilon[0])的概率随机选一个宏动作（会覆盖之前的dir_high_id）
         # Epsilon greedy 是在step内部的，在返回动作之前。update接收到的动作是greedy之后的动作。
         if self.training and np.random.rand() < self.epsilon[0]:

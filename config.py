@@ -7,8 +7,8 @@ def config_init():
     FLAGS = flags.FLAGS  # 定义超参数
     flags.DEFINE_bool("training", True, "Whether to train agents.")
     # flags.DEFINE_bool("training", False, "Whether to train agents.")    # 非训练模式，用于演示
-    # flags.DEFINE_bool("continuation", False, "Continuously training.")    # 重新训练，演示时应为False
-    flags.DEFINE_bool("continuation", True, "Continuously training.")    # 继续训练
+    flags.DEFINE_bool("continuation", False, "Continuously training.")    # 重新训练，演示时应为False
+    # flags.DEFINE_bool("continuation", True, "Continuously training.")    # 继续训练
     flags.DEFINE_float("learning_rate", 5e-4, "Learning rate for training.")
     flags.DEFINE_float("discount", 0.99, "Discount rate for future rewards.")
     flags.DEFINE_integer("max_episodes", int(1000), "Total episodes for training.")  # 训练的最大回合episode数
@@ -38,6 +38,6 @@ def config_init():
     flags.DEFINE_bool("profile", False, "Whether to turn on code profiling.")
     flags.DEFINE_bool("trace", False, "Whether to trace the code execution.")
     # 线程数的最佳值是4 @ 1080ti单卡 + i7 6700
-    flags.DEFINE_integer("parallel", 4, "How many instances to run in parallel.")
+    flags.DEFINE_integer("parallel", 1, "How many instances to run in parallel.")
     flags.DEFINE_bool("save_replay", False, "Whether to save a replay at the end.")
     return FLAGS
