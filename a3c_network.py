@@ -33,22 +33,21 @@ def build_high_net(minimap, screen, info, num_macro_action):
             # value_high = tf.reshape(
             #     layers.fully_connected(critic_hidden_high, 1, activation_fn=None, scope='value_high'), [-1])
             value_high = layers.fully_connected(critic_hidden_high, 1, activation_fn=None, scope='value_high')
+    actor_params_high = tf.get_collection(
+        tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_high/actor_high')
+    critic_params_high = tf.get_collection(
+        tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_high/critic_high')
+    feature_params_high = tf.get_collection(
+        tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_high/feature_high')
+    # 可以在此处重新定义更新参数的方法（考虑为feature_high单独设计梯度）
+    a_params_high = actor_params_high + feature_params_high
+    c_params_high = critic_params_high + feature_params_high
 
-        actor_params_high = tf.get_collection(
-            tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_high/actor_high')
-        critic_params_high = tf.get_collection(
-            tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_high/critic_high')
-        feature_params_high = tf.get_collection(
-            tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_high/feature_high')
-        # 可以在此处重新定义更新参数的方法（考虑为feature_high单独设计梯度）
-        a_params_high = actor_params_high + feature_params_high
-        c_params_high = critic_params_high + feature_params_high
-
-        return action_high_prob, value_high, a_params_high, c_params_high
+    return action_high_prob, value_high, a_params_high, c_params_high
 
 
-def build_low_net(minimap, screen, info, dir_high, act_id):
-    with tf.variable_scope('network_low_cst'):    # cst：construction，建造，只使用screen
+def build_low_net_cst(screen, info, dir_high, act_id):    # cst：construction，建造，只使用screen
+    with tf.variable_scope('network_low_cst'):
         with tf.variable_scope('feature_low_cst'):
             sconv1 = layers.conv2d(tf.transpose(screen, [0, 2, 3, 1]), 16, 5, scope='sconv1')
             sconv2 = layers.conv2d(sconv1, 32, 3, scope='sconv2')
@@ -71,7 +70,21 @@ def build_low_net(minimap, screen, info, dir_high, act_id):
             critic_hidden_low = layers.fully_connected(full_feature_low, 32, activation_fn=tf.nn.relu,
                                                        scope='critic_hidden_low')
             value_low_cst =layers.fully_connected(critic_hidden_low, 1, activation_fn=None, scope='value_low')
-    with tf.variable_scope('network_low_atk'):    # atk：attack，攻击，只使用minimap
+    actor_params_low = tf.get_collection(
+        tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_low_cst/actor_low_cst')
+    critic_params_low = tf.get_collection(
+        tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_low_cst/critic_low_cst')
+    feature_params_low = tf.get_collection(
+        tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_low_cst/feature_low_cst')
+    # 可以在此处重新定义更新参数的方法（考虑为feature_high单独设计梯度）
+    a_params_low = actor_params_low + feature_params_low
+    c_params_low = critic_params_low + feature_params_low
+
+    return action_low_prob_cst, value_low_cst, a_params_low, c_params_low
+
+
+def build_low_net_atk(minimap, info, dir_high, act_id):    # atk：attack，攻击，只使用minimap
+    with tf.variable_scope('network_low_atk'):
         with tf.variable_scope('feature_low_atk'):
             mconv1 = layers.conv2d(tf.transpose(minimap, [0, 2, 3, 1]), 16, 5, scope='mconv1')
             mconv2 = layers.conv2d(mconv1, 32, 3, scope='mconv2')
@@ -94,27 +107,14 @@ def build_low_net(minimap, screen, info, dir_high, act_id):
             critic_hidden_low = layers.fully_connected(full_feature_low, 32, activation_fn=tf.nn.relu,
                                                        scope='critic_hidden_low')
             value_low_atk = layers.fully_connected(critic_hidden_low, 1, activation_fn=None, scope='value_low')
-    if dir_high != 4:
-        actor_params_low = tf.get_collection(
-            tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_low_cst/actor_low_cst')
-        critic_params_low = tf.get_collection(
-            tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_low_cst/critic_low_cst')
-        feature_params_low = tf.get_collection(
-            tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_low_cst/feature_low_cst')
-        action_low_prob = action_low_prob_cst
-        value_low = value_low_cst
-    else:
-        print('network_low_atk')
-        actor_params_low = tf.get_collection(
-            tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_low_atk/actor_low_atk')
-        critic_params_low = tf.get_collection(
-            tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_low_atk/critic_low_atk')
-        feature_params_low = tf.get_collection(
-            tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_low_atk/feature_low_atk')
-        action_low_prob = action_low_prob_atk
-        value_low = value_low_atk
+    actor_params_low = tf.get_collection(
+        tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_low_atk/actor_low_atk')
+    critic_params_low = tf.get_collection(
+        tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_low_atk/critic_low_atk')
+    feature_params_low = tf.get_collection(
+        tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_low_atk/feature_low_atk')
     # 可以在此处重新定义更新参数的方法（考虑为feature_high单独设计梯度）
     a_params_low = actor_params_low + feature_params_low
     c_params_low = critic_params_low + feature_params_low
 
-    return action_low_prob, value_low, a_params_low, c_params_low
+    return action_low_prob_atk, value_low_atk, a_params_low, c_params_low

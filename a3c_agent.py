@@ -8,7 +8,8 @@ from pysc2.lib import actions
 from pysc2.lib import features
 # DHN add:
 from a3c_network import build_high_net
-from a3c_network import build_low_net
+from a3c_network import build_low_net_cst
+from a3c_network import build_low_net_atk
 from high_reward import high_reward
 from low_reward import low_reward
 import random
@@ -83,11 +84,14 @@ class A3CAgent(object):
                                                                                                     self.screen,
                                                                                                     self.info_high,
                                                                                                     num_macro_action)
-            self.action_low_prob, self.value_low, self.a_params_low, self.c_params_low = build_low_net(self.minimap,
-                                                                                                          self.screen,
+            self.action_low_prob_cst, self.value_low_cst, self.a_params_low_cst, self.c_params_low_cst = build_low_net_cst(self.screen,
                                                                                                           self.info_low,
                                                                                                           self.dir_high_usedToFeedLowNet,
                                                                                                           self.act_id)
+            self.action_low_prob_atk, self.value_low_atk, self.a_params_low_atk, self.c_params_low_atk = build_low_net_atk(self.minimap,
+                                                                                                       self.info_low,
+                                                                                                       self.dir_high_usedToFeedLowNet,
+                                                                                                       self.act_id)
 
             # Set targets and masks
             # value_target是v现实，是算完以后传进来的（219行），和莫烦A3C一致（莫烦A3C中56和154行）
