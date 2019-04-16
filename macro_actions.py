@@ -24,8 +24,10 @@ def action_micro(ind_thread, dir_high, ind_todo):
         action = [actions.FunctionCall(function=1, arguments=[[20, 25]])]  # 移动镜头到标准位置
     elif dir_high == 1 and ind_todo == 1:
         action = [actions.FunctionCall(function=3, arguments=[[0], [5, 5], [30, 25]])]  # 框中一些scv
-    # elif dir_high == 1 and ind_todo == 4:
-    #     action = [actions.FunctionCall(function=1, arguments=[[20, 25]])]  # 移动镜头到标准位置
+    elif dir_high == 1 and ind_todo == 3:
+        call_step_low = True
+        LocationToApply = [random.randint(0, 63), random.randint(0, 63)]
+        action = [actions.FunctionCall(function=91, arguments=[LocationToApply])]  # 造房子的随机动作
     elif dir_high == 1 and ind_todo == 4:
         action = [actions.FunctionCall(function=3, arguments=[[0], [5, 5], [30, 25]])]  # 框中一些scv
 
@@ -34,8 +36,10 @@ def action_micro(ind_thread, dir_high, ind_todo):
         action = [actions.FunctionCall(function=1, arguments=[[20, 25]])]  # 移动镜头到标准位置
     elif dir_high == 2 and ind_todo == 1:
         action = [actions.FunctionCall(function=3, arguments=[[0], [5, 5], [30, 25]])]  # 框中一些scv
-    # elif dir_high == 2 and ind_todo == 4:
-    #     action = [actions.FunctionCall(function=1, arguments=[[20, 25]])]  # 移动镜头到标准位置
+    elif dir_high == 2 and ind_todo == 3:
+        call_step_low = True
+        LocationToApply = [random.randint(0, 63), random.randint(0, 63)]
+        action = [actions.FunctionCall(function=42, arguments=[LocationToApply])]  # 造兵营的随机动作
     elif dir_high == 2 and ind_todo == 4:
         action = [actions.FunctionCall(function=3, arguments=[[0], [5, 5], [30, 25]])]  # 框中一些scv
 
