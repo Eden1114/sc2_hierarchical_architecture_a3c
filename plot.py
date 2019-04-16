@@ -36,7 +36,7 @@ Python-Matplotlib 9 颜色和样式
 　　　　kp-
 """
 
-tmp0 = np.load('./DataForAnalysis/victory_or_defeat_self_thread_4_episode_701.npy')
+tmp0 = np.load('./DataForAnalysis/victory_or_defeat_thread_4.npy')
 # tmp1 = np.load('./DataForAnalysis/victory_or_defeat_thread1.npy')
 # tmp2 = np.load('./DataForAnalysis/victory_or_defeat_thread2.npy')
 # tmp3 = np.load('./DataForAnalysis/victory_or_defeat_thread3.npy')
