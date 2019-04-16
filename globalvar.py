@@ -61,10 +61,11 @@ def get_list():
     build_barrack = [1, 3, 5, 42, 3, 5]
     train_marine = [1, 2, 477, 477, 477, 477, 477, 3, 5]
     # idle_worker = [6, 273]
-    idle_worker = [6, 269]
+    # idle_worker = [6, 269]
     all_army_attack = [7, 13]
-    list_actions = {0: train_scv, 1: build_supply, 2: build_barrack, 3: train_marine, 4: idle_worker,
-                    5: all_army_attack}
+    # list_actions = {0: train_scv, 1: build_supply, 2: build_barrack, 3: train_marine, 4: idle_worker,
+    #                 5: all_army_attack}
+    list_actions = {0: train_scv, 1: build_supply, 2: build_barrack, 3: train_marine, 4: all_army_attack}
     return list_actions, len(list_actions)
 
 

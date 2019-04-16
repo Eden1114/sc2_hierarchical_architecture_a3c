@@ -21,8 +21,6 @@ def build_high_net(minimap, screen, info, num_macro_action):
             full_concat = tf.concat([layers.flatten(mconv2), layers.flatten(sconv2), info_high], axis=1)
             full_feature_high = layers.fully_connected(full_concat, 128, activation_fn=tf.nn.relu,
                                                        scope='full_feature_high')
-            # conv_concat = tf.concat([mconv2, sconv2], axis=3)
-            # conv_feature_high = layers.conv2d(conv_concat, 1, 1, activation_fn=None, scope='conv_feature_high')
         with tf.variable_scope('actor_high'):
             actor_hidden_high = layers.fully_connected(full_feature_high, 64, activation_fn=tf.nn.relu,
                                                        scope='actor_hidden_high_1')
@@ -49,43 +47,74 @@ def build_high_net(minimap, screen, info, num_macro_action):
 
 
 def build_low_net(minimap, screen, info, dir_high, act_id):
-    with tf.variable_scope('network_low'):
-        with tf.variable_scope('feature_low'):
-            mconv1 = layers.conv2d(tf.transpose(minimap, [0, 2, 3, 1]), 32, 5, scope='mconv1')
-            # mconv2 = layers.conv2d(mconv1, 32, 3, scope='mconv2')
-            sconv1 = layers.conv2d(tf.transpose(screen, [0, 2, 3, 1]), 32, 5, scope='sconv1')
-            # sconv2 = layers.conv2d(sconv1, 32, 3, scope='sconv2')
+    with tf.variable_scope('network_low_cst'):    # cst：construction，建造，只使用screen
+        with tf.variable_scope('feature_low_cst'):
+            sconv1 = layers.conv2d(tf.transpose(screen, [0, 2, 3, 1]), 16, 5, scope='sconv1')
+            sconv2 = layers.conv2d(sconv1, 32, 3, scope='sconv2')
             high_net_output = tf.concat([dir_high, act_id], axis=1)
             info_concat = tf.concat([layers.flatten(info), high_net_output], axis=1)
             info_low = layers.fully_connected(info_concat, 32, activation_fn=None,
                                               scope='info_low')
 
-            full_concat = tf.concat([layers.flatten(mconv1), layers.flatten(sconv1), info_low], axis=1)
+            full_concat = tf.concat([layers.flatten(sconv2), info_low], axis=1)
             full_feature_low = layers.fully_connected(full_concat, 128, activation_fn=tf.nn.relu,
                                                       scope='full_feature_low')
-            # conv_concat = tf.concat([mconv2, sconv2], axis=3)
-            # conv_feature_low = layers.conv2d(conv_concat, 1, 1, activation_fn=None, scope='conv_feature_low')
-        with tf.variable_scope('actor_low'):
+        with tf.variable_scope('actor_low_cst'):
             actor_hidden_low = layers.fully_connected(full_feature_low, 256, activation_fn=tf.nn.relu,
                                                       scope='actor_hidden_low_1')
             actor_hidden_low_2 = layers.fully_connected(actor_hidden_low, 1024, activation_fn=tf.nn.relu,
                                                         scope='actor_hidden_low_2')
-            action_low = layers.fully_connected(actor_hidden_low_2, 4096, activation_fn=tf.nn.softmax,
-                                                scope='action_low')
-        with tf.variable_scope('critic_low'):
-            critic_hidden_low = layers.fully_connected(full_feature_low, 32, activation_fn=tf.tanh,
+            action_low_prob_cst = tf.layers.dense(actor_hidden_low_2, 4096, activation=tf.nn.softmax, kernel_initializer=w_init,
+                                         name='action_low_prob')
+        with tf.variable_scope('critic_low_cst'):
+            critic_hidden_low = layers.fully_connected(full_feature_low, 32, activation_fn=tf.nn.relu,
                                                        scope='critic_hidden_low')
-            value_low = tf.reshape(
-                layers.fully_connected(critic_hidden_low, 1, activation_fn=tf.tanh, scope='value_low'), [-1])
+            value_low_cst = tf.reshape(
+                layers.fully_connected(critic_hidden_low, 1, activation_fn=None, scope='value_low'), [-1])
+    with tf.variable_scope('network_low_atk'):    # atk：attack，攻击，只使用minimap
+        with tf.variable_scope('feature_low_atk'):
+            mconv1 = layers.conv2d(tf.transpose(minimap, [0, 2, 3, 1]), 16, 5, scope='mconv1')
+            mconv2 = layers.conv2d(mconv1, 32, 3, scope='mconv2')
+            high_net_output = tf.concat([dir_high, act_id], axis=1)
+            info_concat = tf.concat([layers.flatten(info), high_net_output], axis=1)
+            info_low = layers.fully_connected(info_concat, 32, activation_fn=None,
+                                              scope='info_low')
 
+            full_concat = tf.concat([layers.flatten(mconv2), info_low], axis=1)
+            full_feature_low = layers.fully_connected(full_concat, 128, activation_fn=tf.nn.relu,
+                                                      scope='full_feature_low')
+        with tf.variable_scope('actor_low_atk'):
+            actor_hidden_low = layers.fully_connected(full_feature_low, 256, activation_fn=tf.nn.relu,
+                                                      scope='actor_hidden_low_1')
+            actor_hidden_low_2 = layers.fully_connected(actor_hidden_low, 1024, activation_fn=tf.nn.relu,
+                                                        scope='actor_hidden_low_2')
+            action_low_prob_atk = tf.layers.dense(actor_hidden_low_2, 4096, activation=tf.nn.softmax, kernel_initializer=w_init,
+                                         name='action_low_prob')
+        with tf.variable_scope('critic_low_atk'):
+            critic_hidden_low = layers.fully_connected(full_feature_low, 32, activation_fn=tf.nn.relu,
+                                                       scope='critic_hidden_low')
+            value_low_atk = tf.reshape(
+                layers.fully_connected(critic_hidden_low, 1, activation_fn=None, scope='value_low'), [-1])
+    if dir_high != 4:
         actor_params_low = tf.get_collection(
-            tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_low/actor_low')
+            tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_low_cst/actor_low_cst')
         critic_params_low = tf.get_collection(
-            tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_low/critic_low')
+            tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_low_cst/critic_low_cst')
         feature_params_low = tf.get_collection(
-            tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_low/feature_low')
-        # 可以在此处重新定义更新参数的方法（考虑为feature_high单独设计梯度）
-        a_params_low = actor_params_low + feature_params_low
-        c_params_low = critic_params_low + feature_params_low
+            tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_low_cst/feature_low_cst')
+        action_low_prob = action_low_prob_cst
+        value_low = value_low_cst
+    else:
+        actor_params_low = tf.get_collection(
+            tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_low_atk/actor_low_atk')
+        critic_params_low = tf.get_collection(
+            tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_low_atk/critic_low_atk')
+        feature_params_low = tf.get_collection(
+            tf.GraphKeys.TRAINABLE_VARIABLES, scope='network_low_atk/feature_low_atk')
+        action_low_prob = action_low_prob_atk
+        value_low = value_low_atk
+    # 可以在此处重新定义更新参数的方法（考虑为feature_high单独设计梯度）
+    a_params_low = actor_params_low + feature_params_low
+    c_params_low = critic_params_low + feature_params_low
 
-        return action_low, value_low, a_params_low, c_params_low
+    return action_low_prob, value_low, a_params_low, c_params_low

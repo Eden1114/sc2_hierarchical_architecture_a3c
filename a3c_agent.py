@@ -41,7 +41,7 @@ class A3CAgent(object):
         assert msize == ssize
         self.msize = msize
         self.ssize = ssize
-        self.isize = len(actions.FUNCTIONS)
+        # self.isize = len(actions.FUNCTIONS)
         self.info_plus_size_high = 10
         # 当前step，矿物，闲置农民，剩余人口，农民数量，军队数量，房子数量，兵营数量，击杀单位奖励，击杀建筑奖励
         self.info_plus_size_low = 5
@@ -83,7 +83,7 @@ class A3CAgent(object):
                                                                                                     self.screen,
                                                                                                     self.info_high,
                                                                                                     num_macro_action)
-            self.spatial_action_low, self.value_low, self.a_params_low, self.c_params_low = build_low_net(self.minimap,
+            self.action_low_prob, self.value_low, self.a_params_low, self.c_params_low = build_low_net(self.minimap,
                                                                                                           self.screen,
                                                                                                           self.info_low,
                                                                                                           self.dir_high_usedToFeedLowNet,
@@ -100,7 +100,7 @@ class A3CAgent(object):
             self.dir_high_selected = tf.placeholder(tf.float32, [None, num_macro_action], name='dir_high_selected')
 
             # Compute log probability
-            spatial_action_prob_low = tf.reduce_sum(self.spatial_action_low * self.spatial_action_selected_low,
+            spatial_action_prob_low = tf.reduce_sum(self.action_low_prob * self.spatial_action_selected_low,
                                                     axis=1)  # 用法可以参考Matrix_dot-multiply.py
             # spatial_action是网络输出的坐标，维度是“更新时历经的step数” x “ssize**2”
             # spatial_action_selected含义是每一个step需不需要坐标参数（第一维上），且具体坐标参数是什么（第二维上）。spatial_action_selected维度是“更新时历经的step数” x “ssize**2”
@@ -234,15 +234,16 @@ class A3CAgent(object):
                 self.info_low: info_low,
                 self.dir_high_usedToFeedLowNet: dir_high_usedToFeedLowNet,
                 self.act_id: act_ID}
-        spatial_action_low = self.sess.run(
+        action_low_prob = self.sess.run(
             # 数据类型：Tensor("actor_low/Softmax:0", shape=(?, 4096), dtype=float32, device=/device:GPU:0)
             # [array([[0.00019935, 0.00025348, 0.00024519, ..., 0.00016189, 0.00016014, 0.00016842]], dtype=float32)]
-            [self.spatial_action_low],
-            feed_dict=feed)
+            self.action_low_prob, feed_dict=feed)
 
         # 选择施加动作的位置
         # spatial_action_low = spatial_action_low.ravel()  # ravel()是numpy的函数，作用是将数据降维
-        target = np.argmax(spatial_action_low)
+        # target = np.argmax(spatial_action_low)
+        target = np.random.choice(range(action_low_prob.shape[1]),
+                                       p=action_low_prob.ravel())  # 获取坐标位置的4096编号值，用莫凡的代码改进，是policy-based的选择
         target = [int(target // self.ssize),
                   int(target % self.ssize)]  # 获取要施加动作的位置 疑问：若action是勾选方框怎么办？target只有一个坐标吧，那另一个坐标呢？
         # Epsilon greedy exploration  # 0.2(epsilon[1])的概率随机选一个位置施加动作
