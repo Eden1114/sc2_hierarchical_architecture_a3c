@@ -104,36 +104,47 @@ class A3CAgent(object):
             self.dir_high_selected = tf.placeholder(tf.float32, [None, num_macro_action], name='dir_high_selected')
 
             # Compute log probability
-            spatial_action_prob_low = tf.reduce_sum(self.action_low_prob * self.spatial_action_selected_low,
-                                                    axis=1)  # 用法可以参考Matrix_dot-multiply.py
+            action_low_prob_cst = tf.reduce_sum(self.action_low_prob_cst * self.spatial_action_selected_low, axis=1)
+            # 用法可以参考Matrix_dot-multiply.py
             # spatial_action是网络输出的坐标，维度是“更新时历经的step数” x “ssize**2”
             # spatial_action_selected含义是每一个step需不需要坐标参数（第一维上），且具体坐标参数是什么（第二维上）。spatial_action_selected维度是“更新时历经的step数” x “ssize**2”
-            spatial_action_log_prob_low = tf.log(
-                tf.clip_by_value(spatial_action_prob_low, 1e-10, 1.))  # 维度是“更新时历经的step数”
+            action_low_log_prob_cst = tf.log(tf.clip_by_value(action_low_prob_cst, 1e-10, 1.))  # 维度是“更新时历经的step数”
+
+            action_low_prob_atk = tf.reduce_sum(self.action_low_prob_atk * self.spatial_action_selected_low, axis=1)
+            action_low_log_prob_atk = tf.log(tf.clip_by_value(action_low_prob_atk, 1e-10, 1.))
+
             dir_prob_high = tf.reduce_sum(self.action_high_prob * self.dir_high_selected, axis=1)
             dir_log_prob_high = tf.log(tf.clip_by_value(dir_prob_high, 1e-10, 1.))
-            self.summary_low.append(tf.summary.histogram('spatial_action_prob_low', spatial_action_prob_low))
+            self.summary_low.append(tf.summary.histogram('action_low_prob_cst', action_low_prob_cst))
+            self.summary_low.append(tf.summary.histogram('action_low_prob_atk', action_low_prob_atk))
             self.summary_high.append(tf.summary.histogram('dir_prob_high', dir_prob_high))
 
             # Compute losses, more details in https://arxiv.org/abs/1602.01783
             # 计算网络的a、c loss(这里主要参考莫烦a3c的discrete action程序)
             # 下层网络：
-            td_low = tf.subtract(self.value_target_low, self.value_low, name='TD_error_low')
-            self.c_loss_low = tf.reduce_mean(tf.square(td_low))
-            log_prob_low = self.valid_spatial_action_low * spatial_action_log_prob_low  # valid_spatial_action含义是每一个step需不需要坐标参数，维度是“更新时历经的step数”
-            self.exp_v_low = log_prob_low * tf.stop_gradient(td_low)
-            self.a_loss_low = - tf.reduce_mean(self.exp_v_low)  # 这里不需要像莫烦那样添加一步“增加探索度的操作”了，因为在step_low里已经设置了增加探索度的操作
+            td_low_cst = tf.subtract(self.value_target_low, self.value_low_cst, name='TD_error_low_cst')
+            self.c_loss_low_cst = tf.reduce_mean(tf.square(td_low_cst))
+            log_prob_low_cst = self.valid_spatial_action_low * action_low_log_prob_cst  # valid_spatial_action含义是每一个step需不需要坐标参数，维度是“更新时历经的step数”
+            self.exp_v_low_cst = log_prob_low_cst * tf.stop_gradient(td_low_cst)
+            self.a_loss_low_cst = - tf.reduce_mean(self.exp_v_low_cst)  # 这里不需要像莫烦那样添加一步“增加探索度的操作”了，因为在step_low里已经设置了增加探索度的操作
+
+            td_low_atk = tf.subtract(self.value_target_low, self.value_low_atk, name='TD_error_low_atk')
+            self.c_loss_low_atk = tf.reduce_mean(tf.square(td_low_atk))
+            log_prob_low_atk = self.valid_spatial_action_low * action_low_log_prob_atk  # valid_spatial_action含义是每一个step需不需要坐标参数，维度是“更新时历经的step数”
+            self.exp_v_low_atk = log_prob_low_atk * tf.stop_gradient(td_low_atk)
+            self.a_loss_low_atk = - tf.reduce_mean(self.exp_v_low_atk)  # 这里不需要像莫烦那样添加一步“增加探索度的操作”了，因为在step_low里已经设置了增加探索度的操作
 
             # 上层网络：
             td_high = tf.subtract(self.value_target_high, self.value_high, name='TD_error_high')
             self.c_loss_high = tf.reduce_mean(tf.square(td_high))
             self.exp_v_high = dir_log_prob_high * tf.stop_gradient(td_high)
-            self.a_loss_high = - tf.reduce_mean(
-                self.exp_v_high)  # 这里不需要epsilon greedy增加探索度了（像莫烦那样），因为在step_low里已经设置了增加探索度的操作
+            self.a_loss_high = - tf.reduce_mean(self.exp_v_high)
 
             # 添加summary：
-            self.summary_low.append(tf.summary.scalar('a_loss_low', self.a_loss_low))
-            self.summary_low.append(tf.summary.scalar('c_loss_low', self.c_loss_low))
+            self.summary_low.append(tf.summary.scalar('a_loss_low_cst', self.a_loss_low_cst))
+            self.summary_low.append(tf.summary.scalar('c_loss_low_cst', self.c_loss_low_cst))
+            self.summary_low.append(tf.summary.scalar('a_loss_low_atk', self.a_loss_low_atk))
+            self.summary_low.append(tf.summary.scalar('c_loss_low_atk', self.c_loss_low_atk))
             self.summary_high.append(tf.summary.scalar('a_loss_high', self.a_loss_high))
             self.summary_high.append(tf.summary.scalar('c_loss_high', self.c_loss_high))
 
@@ -141,12 +152,16 @@ class A3CAgent(object):
             # 下层网络：
             self.learning_rate_a_low = tf.placeholder(tf.float32, None, name='learning_rate_a_low')
             opt_a_low = tf.train.RMSPropOptimizer(self.learning_rate_a_low, decay=0.99, epsilon=1e-10)
-            self.a_grads_low = tf.gradients(self.a_loss_low, self.a_params_low)
-            self.update_a_low = opt_a_low.apply_gradients(zip(self.a_grads_low, self.a_params_low))
+            self.a_grads_low_cst = tf.gradients(self.a_loss_low_cst, self.a_params_low_cst)
+            self.update_a_low_cst = opt_a_low.apply_gradients(zip(self.a_grads_low_cst, self.a_params_low_cst))
+            self.a_grads_low_atk = tf.gradients(self.a_loss_low_atk, self.a_params_low_atk)
+            self.update_a_low_atk = opt_a_low.apply_gradients(zip(self.a_grads_low_atk, self.a_params_low_atk))
             self.learning_rate_c_low = tf.placeholder(tf.float32, None, name='learning_rate_c_low')
             opt_c_low = tf.train.RMSPropOptimizer(self.learning_rate_c_low, decay=0.99, epsilon=1e-10)
-            self.c_grads_low = tf.gradients(self.c_loss_low, self.c_params_low)
-            self.update_c_low = opt_c_low.apply_gradients(zip(self.c_grads_low, self.c_params_low))
+            self.c_grads_low_cst = tf.gradients(self.c_loss_low_cst, self.c_params_low_cst)
+            self.update_c_low_cst = opt_c_low.apply_gradients(zip(self.c_grads_low_cst, self.c_params_low_cst))
+            self.c_grads_low_atk = tf.gradients(self.c_loss_low_atk, self.c_params_low_atk)
+            self.update_c_low_atk = opt_c_low.apply_gradients(zip(self.c_grads_low_atk, self.c_params_low_atk))
 
             # 上层网络：
             self.learning_rate_a_high = tf.placeholder(tf.float32, None, name='learning_rate_a_high')
