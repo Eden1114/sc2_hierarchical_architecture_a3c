@@ -16,7 +16,7 @@ def global_init(index):
                 "low_reward_decay": 0, "reward_list": [],
                 "sum_reward": -9999, "reward_of_episode": [], "iswin": False,
                 "victory_or_defeat_self": [],
-                "enemy_location_minimap":[]}
+                "enemy_location_minimap": []}
         global_var_dict.append(dict)
 
 

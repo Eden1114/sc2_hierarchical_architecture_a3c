@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import tensorflow as tf
 import tensorflow.contrib.layers as layers
+
 w_init = tf.random_normal_initializer(0., .1)
 
 
@@ -46,7 +47,7 @@ def build_high_net(minimap, screen, info, num_macro_action):
         return action_high_prob, value_high, a_params_high, c_params_high
 
 
-def build_low_net(minimap, screen, info, spatial_size=4096):
+def build_low_net(minimap, screen, info, spatial_size):
     with tf.variable_scope('network_low'):
         with tf.variable_scope('feature_low'):
             mconv1 = layers.conv2d(tf.transpose(minimap, [0, 2, 3, 1]), 32, 5, scope='mconv1')
@@ -69,8 +70,8 @@ def build_low_net(minimap, screen, info, spatial_size=4096):
             # action_low = layers.fully_connected(actor_hidden_low_2, 4096, activation_fn=tf.nn.softmax,
             #                                     scope='action_low')
             action_low_prob = tf.layers.dense(actor_hidden_low_2, spatial_size, activation=tf.nn.softmax,
-                                                  kernel_initializer=w_init,
-                                                  name='action_low_prob')
+                                              kernel_initializer=w_init,
+                                              name='action_low_prob')
         with tf.variable_scope('critic_low'):
             critic_hidden_low = layers.fully_connected(full_feature_low, 32, activation_fn=tf.nn.relu,
                                                        scope='critic_hidden_low')

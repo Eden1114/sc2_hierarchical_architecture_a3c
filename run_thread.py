@@ -40,7 +40,7 @@ def run_loop(agents, env, max_steps, ind_thread):
                 last_timesteps = timesteps
 
                 GL.set_value(ind_thread, "enemy_location_minimap", [])
-                player_relative_minimap = np.array( last_timesteps[0].observation['feature_minimap'][5] )
+                player_relative_minimap = np.array(last_timesteps[0].observation['feature_minimap'][5])
                 enemy_location_minimap = np.argwhere(player_relative_minimap == 4)
                 # Number_enemy_location_minimap = np.sum(player_relative_minimap == 4)
                 GL.set_value(ind_thread, "enemy_location_minimap", enemy_location_minimap)
@@ -48,7 +48,7 @@ def run_loop(agents, env, max_steps, ind_thread):
                 # saving = GL.get_saving()
                 # if saving:
                 #     time.sleep(120)
-                    # DHN add:
+                # DHN add:
                 if ind_last == -1 or ind_last == -99 or ind_last == 666:
                     # ind_last == -99 (表示宏动作里的微动作执行失败)
                     # ind_last == 666 (表示宏动作成功执行完毕）:
@@ -145,7 +145,7 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
         PARALLEL = FLAGS.parallel  # PARALLEL 指定开几个线程（几个游戏窗口在跑星际2）
         MAX_AGENT_STEPS = FLAGS.max_agent_steps
     SNAPSHOT = FLAGS.snapshot_path + FLAGS.map + '/' + FLAGS.net
-    ind_thread_all = PARALLEL    # 第n+1个线程标号用于存储全episode的累积数据
+    ind_thread_all = PARALLEL  # 第n+1个线程标号用于存储全episode的累积数据
 
     with sc2_env.SC2Env(
             map_name=map_name,
@@ -184,16 +184,15 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                 iswin = replay_buffer_2[-1][-1].reward
                 obs = recorder[-1].observation
                 score = obs["score_cumulative"][0]
-                print('num_step:', num_steps)
+                # print('num_step:', num_steps)
 
                 # 更新下层网络
                 # if call_step_low:
-                if num_call_step_low % 5 == 1 and num_call_step_low > update_low_iter:
+                if num_call_step_low % 10 == 1 and num_call_step_low > update_low_iter:
                     learning_rate_a_low = FLAGS.learning_rate * (
                             1 - 0.9 * counter / FLAGS.max_episodes)  # 根据当前进行完的回合数量修改学习速率（减小）
                     learning_rate_c_low = FLAGS.learning_rate * (
                             1 - 0.9 * counter / FLAGS.max_episodes)  # 根据当前进行完的回合数量修改学习速率（减小）
-                    print('num_call_step_low:', num_call_step_low)
                     agent.update_low(ind_thread, replay_buffer_1, dir_high_buffer_1, FLAGS.discount,
                                      learning_rate_a_low, learning_rate_c_low, counter, macro_type, coord_type)
                     replay_buffer_1 = []
@@ -208,7 +207,6 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                             1 - 0.9 * counter / FLAGS.max_episodes)  # 根据当前进行完的回合数量修改学习速率（减小）
                     learning_rate_c_high = FLAGS.learning_rate * (
                             1 - 0.9 * counter / FLAGS.max_episodes)  # 根据当前进行完的回合数量修改学习速率（减小）
-                    print('update_high: ', num_steps)
                     agent.update_high(ind_thread, replay_buffer_2, dir_high_buffer_2, FLAGS.discount,
                                       learning_rate_a_high, learning_rate_c_high, counter)
                     replay_buffer_2 = []
@@ -216,7 +214,6 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
 
                 if is_done:  # 最终状态，后续处理，存储数据
                     if len(replay_buffer_1) > 0:
-                        print('update_2:', len(replay_buffer_1))
                         agent.update_low(ind_thread, replay_buffer_1, dir_high_buffer_1, FLAGS.discount,
                                          learning_rate_a_low, learning_rate_c_low, counter, macro_type, coord_type)
                         replay_buffer_1 = []
@@ -258,7 +255,8 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                                 "./DataForAnalysis/reward_of_episode_" + str(counter) + "_thread_" + str(i) + ".npy",
                                 GL.get_value(i, "reward_of_episode"))
                             np.save(
-                                "./DataForAnalysis/reward_high_list_thread_" + str(i) + "_episode_" + str(counter) + ".npy",
+                                "./DataForAnalysis/reward_high_list_thread_" + str(i) + "_episode_" + str(
+                                    counter) + ".npy",
                                 GL.get_value(i, "reward_high_list"))
                             np.save(
                                 "./DataForAnalysis/reward_low_list_thread_" + str(i) + "_episode_" + str(
@@ -280,7 +278,8 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                         np.save("./DataForAnalysis/episode_score_list_thread_" + str(ind_thread_all) + "episode" + str(
                             counter) + ".npy", GL.get_value(ind_thread_all, "episode_score_list"))
                         np.save(
-                            "./DataForAnalysis/reward_high_list_thread_" + str(ind_thread_all) + "_episode_" + str(counter) + ".npy",
+                            "./DataForAnalysis/reward_high_list_thread_" + str(ind_thread_all) + "_episode_" + str(
+                                counter) + ".npy",
                             GL.get_value(i, "reward_high_list"))
                         np.save(
                             "./DataForAnalysis/reward_low_list_thread_" + str(ind_thread_all) + "_episode_" + str(
@@ -289,7 +288,7 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                     if counter >= FLAGS.max_episodes:  # 超过设定的最大训练回合数后，退出循环（等于线程结束）
                         break
 
-            else:    # 非训练模式
+            else:  # 非训练模式
                 if is_done:  # 回合结束
                     obs = recorder[-1].observation  # 训练模式下Counter/counter会加一，会更新网络参数，有可能存储网络参数，不打印得分；
                     score = obs["score_cumulative"][0]  # 非训练模式下不更新Counter/counter,不更新不存储网络参数，打印得分
@@ -313,8 +312,8 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                     GL.add_value_list(ind_thread_all, "victory_or_defeat", iswin)
                     GL.add_value_list(ind_thread_all, "episode_score_list", score)
                     GL.add_value_list(ind_thread_all, "victory_or_defeat_self", iswin_self)
-                # global_episode是FLAGS.snapshot_step的倍数+1，或指定回合数
-                # 存单个episode的reward变化，存储网络参数（tf.train.Saver().save(),见a3c_agent），存全局numpy以备急停
+                    # global_episode是FLAGS.snapshot_step的倍数+1，或指定回合数
+                    # 存单个episode的reward变化，存储网络参数（tf.train.Saver().save(),见a3c_agent），存全局numpy以备急停
                     if (counter % FLAGS.snapshot_step == 1) or (counter in FLAGS.quicksave_step_list):
                         for i in range(PARALLEL):
                             np.save(
