@@ -46,16 +46,16 @@ def build_high_net(minimap, screen, info, num_macro_action):
         return action_high_prob, value_high, a_params_high, c_params_high
 
 
-def build_low_net(minimap, screen, info, dir_high, act_id):
+def build_low_net(minimap, screen, info, spatial_size=4096):
     with tf.variable_scope('network_low'):
         with tf.variable_scope('feature_low'):
             mconv1 = layers.conv2d(tf.transpose(minimap, [0, 2, 3, 1]), 32, 5, scope='mconv1')
             # mconv2 = layers.conv2d(mconv1, 32, 3, scope='mconv2')
             sconv1 = layers.conv2d(tf.transpose(screen, [0, 2, 3, 1]), 32, 5, scope='sconv1')
             # sconv2 = layers.conv2d(sconv1, 32, 3, scope='sconv2')
-            high_net_output = tf.concat([dir_high, act_id], axis=1)
-            info_concat = tf.concat([layers.flatten(info), high_net_output], axis=1)
-            info_low = layers.fully_connected(info_concat, 32, activation_fn=None,
+            # high_net_output = tf.concat([dir_high, act_id], axis=1)
+            # info_concat = tf.concat([layers.flatten(info), high_net_output], axis=1)
+            info_low = layers.fully_connected(layers.flatten(info), 32, activation_fn=None,
                                               scope='info_low')
 
             full_concat = tf.concat([layers.flatten(mconv1), layers.flatten(sconv1), info_low], axis=1)
@@ -68,7 +68,7 @@ def build_low_net(minimap, screen, info, dir_high, act_id):
                                                         scope='actor_hidden_low_2')
             # action_low = layers.fully_connected(actor_hidden_low_2, 4096, activation_fn=tf.nn.softmax,
             #                                     scope='action_low')
-            action_low_prob = tf.layers.dense(actor_hidden_low_2, 4096, activation=tf.nn.softmax,
+            action_low_prob = tf.layers.dense(actor_hidden_low_2, spatial_size, activation=tf.nn.softmax,
                                                   kernel_initializer=w_init,
                                                   name='action_low_prob')
         with tf.variable_scope('critic_low'):

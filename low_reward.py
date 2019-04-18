@@ -2,7 +2,7 @@ import math
 import globalvar as GL
 
 
-def low_reward(next_obs, obs, coordinate, micro_isdone, macro_type, coord_type, ind_thread):
+def low_reward(next_obs, obs, coordinate, macro_type, coord_type, ind_thread):
     reward = 0
     # 坐标x方向向右为正，y方向向下为正，左上角是[0, 0]
     base = [19, 22]  # minimap

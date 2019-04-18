@@ -117,8 +117,6 @@ def run_loop(agents, env, max_steps, ind_thread):
                 # Only for a single player!
                 is_done = (num_steps >= max_steps) or timesteps[0].last()
                 # timesteps[0]是timesteps的第一个变量step_type（状态类型），last()为True即到了末状态
-                if num_call_step_low == 0:
-                    num_call_step_low = num_steps
                 yield [last_timesteps[0], action[0], timesteps[0]], \
                       is_done, num_steps, call_step_low, num_call_step_low, macro_type, coord_type
                 # yield适用于函数返回内容较多，占用内存量很大的情况。可以看成返回了一个列表（实际不是）
@@ -165,7 +163,7 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
         dir_high_buffer_1 = []
         replay_buffer_2 = []
         dir_high_buffer_2 = []
-        num_call_step_low = 0
+        update_low_iter = 0
 
         # 下行中的run_loop是个生成器，for循环每次进入到run_loop里，得到yield后返回，继续进行循环体里的语句，for循环再次进入run_loop后从run_loop的yield的下一条语句开始执行，执行到yield再次返回，继续执行循环体语句...
         for recorder, is_done, num_steps, call_step_low, num_call_step_low, macro_type, coord_type in run_loop(
@@ -186,31 +184,48 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                 iswin = replay_buffer_2[-1][-1].reward
                 obs = recorder[-1].observation
                 score = obs["score_cumulative"][0]
+                print('num_step:', num_steps)
 
                 # 更新下层网络
-                if call_step_low:
+                # if call_step_low:
+                if num_call_step_low % 5 == 1 and num_call_step_low > update_low_iter:
                     learning_rate_a_low = FLAGS.learning_rate * (
                             1 - 0.9 * counter / FLAGS.max_episodes)  # 根据当前进行完的回合数量修改学习速率（减小）
                     learning_rate_c_low = FLAGS.learning_rate * (
                             1 - 0.9 * counter / FLAGS.max_episodes)  # 根据当前进行完的回合数量修改学习速率（减小）
+                    print('num_call_step_low:', num_call_step_low)
                     agent.update_low(ind_thread, replay_buffer_1, dir_high_buffer_1, FLAGS.discount,
                                      learning_rate_a_low, learning_rate_c_low, counter, macro_type, coord_type)
                     replay_buffer_1 = []
                     dir_high_buffer_1 = []
+                    update_low_iter = num_call_step_low
 
                 # 更新上层网络
                 ind_last = GL.get_value(ind_thread, "ind_micro")
-                if ind_last == -99 or ind_last == 666:
+                # if ind_last == -99 or ind_last == 666:
+                if num_steps % 50 == 0:
                     learning_rate_a_high = FLAGS.learning_rate * (
                             1 - 0.9 * counter / FLAGS.max_episodes)  # 根据当前进行完的回合数量修改学习速率（减小）
                     learning_rate_c_high = FLAGS.learning_rate * (
                             1 - 0.9 * counter / FLAGS.max_episodes)  # 根据当前进行完的回合数量修改学习速率（减小）
+                    print('update_high: ', num_steps)
                     agent.update_high(ind_thread, replay_buffer_2, dir_high_buffer_2, FLAGS.discount,
                                       learning_rate_a_high, learning_rate_c_high, counter)
                     replay_buffer_2 = []
                     dir_high_buffer_2 = []
 
                 if is_done:  # 最终状态，后续处理，存储数据
+                    if len(replay_buffer_1) > 0:
+                        print('update_2:', len(replay_buffer_1))
+                        agent.update_low(ind_thread, replay_buffer_1, dir_high_buffer_1, FLAGS.discount,
+                                         learning_rate_a_low, learning_rate_c_low, counter, macro_type, coord_type)
+                        replay_buffer_1 = []
+                        dir_high_buffer_1 = []
+                    if len(replay_buffer_2) > 0:
+                        agent.update_high(ind_thread, replay_buffer_2, dir_high_buffer_2, FLAGS.discount,
+                                          learning_rate_a_high, learning_rate_c_high, counter)
+                        replay_buffer_2 = []
+                        dir_high_buffer_2 = []
                     iswin_self = GL.get_value(ind_thread, "iswin")
                     print("=====" * 10)
                     print("Episode_counter: ", counter)
