@@ -190,7 +190,7 @@ class A3CAgent(object):
         feed = {self.minimap: minimap,
                 self.screen: screen,
                 self.info_high: info_high}
-        action_high_prob = self.sess.run([self.action_high_prob], feed_dict=feed)
+        action_high_prob = self.sess.run(self.action_high_prob, feed_dict=feed)
         # 选择出宏动作的编号/id
         # DHN待处理： 可以将dir_high先根据一定的方法筛选一下（比如宏动作中的硬编码微动作是否在obs.observation['available_actions']中）
         # valid_dir_high = obs.observation['available_actions']
