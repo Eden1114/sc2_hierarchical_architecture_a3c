@@ -201,8 +201,8 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
 
                 # 更新上层网络
                 ind_last = GL.get_value(ind_thread, "ind_micro")
-                # if ind_last == -99 or ind_last == 666:
-                if num_steps % 50 == 0:
+                if ind_last == -99 or ind_last == 666:
+                    # if num_steps % 50 == 0:
                     learning_rate_a_high = FLAGS.learning_rate * (
                             1 - 0.9 * counter / FLAGS.max_episodes)  # 根据当前进行完的回合数量修改学习速率（减小）
                     learning_rate_c_high = FLAGS.learning_rate * (
