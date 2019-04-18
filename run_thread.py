@@ -39,6 +39,7 @@ def run_loop(agents, env, max_steps, ind_thread):
                 GL.set_value(ind_thread, "num_steps", num_steps)
                 last_timesteps = timesteps
 
+                GL.set_value(ind_thread, "enemy_location_minimap", [])
                 player_relative_minimap = np.array( last_timesteps[0].observation['feature_minimap'][5] )
                 enemy_location_minimap = np.argwhere(player_relative_minimap == 4)
                 # Number_enemy_location_minimap = np.sum(player_relative_minimap == 4)

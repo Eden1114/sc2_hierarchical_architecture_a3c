@@ -41,7 +41,7 @@ class A3CAgent(object):
         assert msize == ssize
         self.msize = msize
         self.ssize = ssize
-        self.isize = len(actions.FUNCTIONS)
+        # self.isize = len(actions.FUNCTIONS)
         self.info_plus_size_high = 10
         # 当前step，矿物，闲置农民，剩余人口，农民数量，军队数量，房子数量，兵营数量，击杀单位奖励，击杀建筑奖励
         self.info_plus_size_low = 5
@@ -79,11 +79,11 @@ class A3CAgent(object):
 
             # Build networks
             # DHN add:
-            self.dir_high, self.value_high, self.a_params_high, self.c_params_high = build_high_net(self.minimap,
+            self.action_high_prob, self.value_high, self.a_params_high, self.c_params_high = build_high_net(self.minimap,
                                                                                                     self.screen,
                                                                                                     self.info_high,
                                                                                                     num_macro_action)
-            self.spatial_action_low, self.value_low, self.a_params_low, self.c_params_low = build_low_net(self.minimap,
+            self.action_low_prob, self.value_low, self.a_params_low, self.c_params_low = build_low_net(self.minimap,
                                                                                                           self.screen,
                                                                                                           self.info_low,
                                                                                                           self.dir_high_usedToFeedLowNet,
@@ -100,32 +100,33 @@ class A3CAgent(object):
             self.dir_high_selected = tf.placeholder(tf.float32, [None, num_macro_action], name='dir_high_selected')
 
             # Compute log probability
-            spatial_action_prob_low = tf.reduce_sum(self.spatial_action_low * self.spatial_action_selected_low,
-                                                    axis=1)  # 用法可以参考Matrix_dot-multiply.py
+            # 用法可以参考Matrix_dot-multiply.py
             # spatial_action是网络输出的坐标，维度是“更新时历经的step数” x “ssize**2”
             # spatial_action_selected含义是每一个step需不需要坐标参数（第一维上），且具体坐标参数是什么（第二维上）。spatial_action_selected维度是“更新时历经的step数” x “ssize**2”
-            spatial_action_log_prob_low = tf.log(
-                tf.clip_by_value(spatial_action_prob_low, 1e-10, 1.))  # 维度是“更新时历经的step数”
-            dir_prob_high = tf.reduce_sum(self.dir_high * self.dir_high_selected, axis=1)
-            dir_log_prob_high = tf.log(tf.clip_by_value(dir_prob_high, 1e-10, 1.))
-            self.summary_low.append(tf.summary.histogram('spatial_action_prob_low', spatial_action_prob_low))
-            self.summary_high.append(tf.summary.histogram('dir_prob_high', dir_prob_high))
+            # 维度是“更新时历经的step数”
+            action_low_prob = tf.reduce_sum(self.action_low_prob * self.spatial_action_selected_low, axis=1)
+            action_low_log_prob = tf.log(tf.clip_by_value(action_low_prob, 1e-10, 1.))
+
+            action_high_prob = tf.reduce_sum(self.action_high_prob * self.dir_high_selected, axis=1)
+            action_high_log_prob = tf.log(tf.clip_by_value(action_high_prob, 1e-10, 1.))
+            self.summary_low.append(tf.summary.histogram('action_low_prob', action_low_prob))
+            self.summary_high.append(tf.summary.histogram('action_high_prob', action_high_prob))
 
             # Compute losses, more details in https://arxiv.org/abs/1602.01783
             # 计算网络的a、c loss(这里主要参考莫烦a3c的discrete action程序)
             # 下层网络：
             td_low = tf.subtract(self.value_target_low, self.value_low, name='TD_error_low')
             self.c_loss_low = tf.reduce_mean(tf.square(td_low))
-            log_prob_low = self.valid_spatial_action_low * spatial_action_log_prob_low  # valid_spatial_action含义是每一个step需不需要坐标参数，维度是“更新时历经的step数”
+            log_prob_low = self.valid_spatial_action_low * action_low_log_prob  # valid_spatial_action含义是每一个step需不需要坐标参数，维度是“更新时历经的step数”
             self.exp_v_low = log_prob_low * tf.stop_gradient(td_low)
             self.a_loss_low = - tf.reduce_mean(self.exp_v_low)  # 这里不需要像莫烦那样添加一步“增加探索度的操作”了，因为在step_low里已经设置了增加探索度的操作
 
             # 上层网络：
             td_high = tf.subtract(self.value_target_high, self.value_high, name='TD_error_high')
             self.c_loss_high = tf.reduce_mean(tf.square(td_high))
-            self.exp_v_high = dir_log_prob_high * tf.stop_gradient(td_high)
-            self.a_loss_high = - tf.reduce_mean(
-                self.exp_v_high)  # 这里不需要epsilon greedy增加探索度了（像莫烦那样），因为在step_low里已经设置了增加探索度的操作
+            self.exp_v_high = action_high_log_prob * tf.stop_gradient(td_high)
+            self.a_loss_high = - tf.reduce_mean(self.exp_v_high)
+            # 这里不需要epsilon greedy增加探索度了（像莫烦那样），因为在step_low里已经设置了增加探索度的操作
 
             # 添加summary：
             self.summary_low.append(tf.summary.scalar('a_loss_low', self.a_loss_low))
@@ -189,13 +190,13 @@ class A3CAgent(object):
         feed = {self.minimap: minimap,
                 self.screen: screen,
                 self.info_high: info_high}
-        dir_high = self.sess.run(
-            [self.dir_high],
-            feed_dict=feed)
+        action_high_prob = self.sess.run([self.action_high_prob], feed_dict=feed)
         # 选择出宏动作的编号/id
         # DHN待处理： 可以将dir_high先根据一定的方法筛选一下（比如宏动作中的硬编码微动作是否在obs.observation['available_actions']中）
         # valid_dir_high = obs.observation['available_actions']
-        dir_high_id = np.argmax(dir_high)  # 获取要执行的宏动作id（从0开始）
+        # dir_high_id = np.argmax(dir_high)  # 获取要执行的宏动作id（从0开始）
+        # 获取要执行的宏动作id，用莫凡的代码改进，是policy-based的选择
+        dir_high_id = np.random.choice(range(action_high_prob.shape[1]), p=action_high_prob.ravel())
         # Epsilon greedy exploration  # 0.05(epsilon[0])的概率随机选一个宏动作（会覆盖之前的dir_high_id）
         # Epsilon greedy 是在step内部的，在返回动作之前。update接收到的动作是greedy之后的动作。
         if self.training and np.random.rand() < self.epsilon[0]:
@@ -235,17 +236,17 @@ class A3CAgent(object):
                 self.info_low: info_low,
                 self.dir_high_usedToFeedLowNet: dir_high_usedToFeedLowNet,
                 self.act_id: act_ID}
-        spatial_action_low = self.sess.run(
-            # 数据类型：Tensor("actor_low/Softmax:0", shape=(?, 4096), dtype=float32, device=/device:GPU:0)
-            # [array([[0.00019935, 0.00025348, 0.00024519, ..., 0.00016189, 0.00016014, 0.00016842]], dtype=float32)]
-            [self.spatial_action_low],
-            feed_dict=feed)
+        # 数据类型：Tensor("actor_low/Softmax:0", shape=(?, 4096), dtype=float32, device=/device:GPU:0)
+        # [array([[0.00019935, 0.00025348, 0.00024519, ..., 0.00016189, 0.00016014, 0.00016842]], dtype=float32)]
+        action_low_prob = self.sess.run(self.action_low_prob, feed_dict=feed)
 
         # 选择施加动作的位置
         # spatial_action_low = spatial_action_low.ravel()  # ravel()是numpy的函数，作用是将数据降维
-        target = np.argmax(spatial_action_low)
-        target = [int(target // self.ssize),
-                  int(target % self.ssize)]  # 获取要施加动作的位置 疑问：若action是勾选方框怎么办？target只有一个坐标吧，那另一个坐标呢？
+        # target = np.argmax(spatial_action_low)
+        # 获取坐标位置的4096编号值，用莫凡的代码改进，是policy-based的选择
+        position_id = np.random.choice(range(action_low_prob.shape[1]), p=action_low_prob.ravel())
+        target = [int(position_id // self.ssize),
+                  int(position_id % self.ssize)]  # 获取要施加动作的位置 疑问：若action是勾选方框怎么办？target只有一个坐标吧，那另一个坐标呢？
         # Epsilon greedy exploration  # 0.2(epsilon[1])的概率随机选一个位置施加动作
         if self.training and np.random.rand() < self.epsilon[1]:
         # if np.random.rand() < self.epsilon[1]:
