@@ -225,22 +225,11 @@ class A3CAgent(object):
 
     def step_low(self, ind_thread, obs, dir_high, act_id):
         # obs就是环境传入的timestep
-        minimap = np.array(obs.observation['feature_minimap'],
-                           dtype=np.float32)  # 以下4行将minimap和screen的特征做一定处理后分别保存在minimap和screen变量中
-        minimap = np.expand_dims(U.preprocess_minimap(minimap), axis=0)  # 这四行具体语法暂未研究
-        screen = np.array(obs.observation['feature_screen'], dtype=np.float32)
-        screen = np.expand_dims(U.preprocess_screen(screen), axis=0)
-        # info = np.zeros([1, self.isize], dtype=np.float32)  # self.isize值是动作函数的数量
-        # info[0, obs.observation['available_actions']] = 1  # info存储可执行的动作。
-        # info_plus_low: 当前step，房子数量，兵营数量，击杀奖励
         step_count = GL.get_value(ind_thread, "num_steps")
         supply_num = GL.get_value(ind_thread, "supply_num")
         barrack_num = GL.get_value(ind_thread, "barrack_num")
         killed_unit_score = obs.observation["score_cumulative"][5]
         killed_structure_score = obs.observation["score_cumulative"][6]
-        # info_plus_low = np.zeros([1, self.info_plus_size_low], dtype=np.float32)
-        # info_plus_low[0] = step_count, supply_num, barrack_num, killed_unit_score, killed_structure_score
-        # info_low = np.concatenate((info, info_plus_low), axis=1)
         info_low = np.zeros([1, self.info_plus_size_low], dtype=np.float32)
         info_low[0] = step_count, supply_num, barrack_num, killed_unit_score, killed_structure_score
         dir_high_usedToFeedLowNet = np.ones([1, 1], dtype=np.float32)
@@ -248,15 +237,26 @@ class A3CAgent(object):
         act_ID = np.ones([1, 1], dtype=np.float32)
         act_ID[0][0] = act_id
 
-        feed = {self.minimap: minimap,
-                self.screen: screen,
-                self.info_low: info_low,
-                self.dir_high_usedToFeedLowNet: dir_high_usedToFeedLowNet,
-                self.act_id: act_ID}
-        action_low_prob = self.sess.run(
-            # 数据类型：Tensor("actor_low/Softmax:0", shape=(?, 4096), dtype=float32, device=/device:GPU:0)
-            # [array([[0.00019935, 0.00025348, 0.00024519, ..., 0.00016189, 0.00016014, 0.00016842]], dtype=float32)]
-            self.action_low_prob, feed_dict=feed)
+        # 分层low_net
+        if dir_high != 4:    # low_net_cst
+            screen = np.array(obs.observation['feature_screen'], dtype=np.float32)
+            screen = np.expand_dims(U.preprocess_screen(screen), axis=0)
+            feed = {self.screen: screen,
+                    self.info_low: info_low,
+                    self.dir_high_usedToFeedLowNet: dir_high_usedToFeedLowNet,
+                    self.act_id: act_ID}
+            action_low_prob = self.sess.run(self.action_low_prob_cst, feed_dict=feed)
+                # 数据类型：Tensor("actor_low/Softmax:0", shape=(?, 4096), dtype=float32, device=/device:GPU:0)
+                # [array([[0.00019935, 0.00025348, 0.00024519, ..., 0.00016189, 0.00016014, 0.00016842]], dtype=float32)]
+
+        else:    # low_net_atk
+            minimap = np.array(obs.observation['feature_minimap'], dtype=np.float32)
+            minimap = np.expand_dims(U.preprocess_minimap(minimap), axis=0)
+            feed = {self.minimap: minimap,
+                    self.info_low: info_low,
+                    self.dir_high_usedToFeedLowNet: dir_high_usedToFeedLowNet,
+                    self.act_id: act_ID}
+            action_low_prob = self.sess.run(self.action_low_prob_atk, feed_dict=feed)
 
         # 选择施加动作的位置
         # spatial_action_low = spatial_action_low.ravel()  # ravel()是numpy的函数，作用是将数据降维
@@ -278,25 +278,16 @@ class A3CAgent(object):
     def update_low(self, ind_thread, rbs, dhs, disc, lr_a, lr_c, cter, macro_type, coord_type):
         # rbs(replayBuffers)是[last_timesteps[0], actions[0], timesteps[0]]的集合（agent在一回合里进行了多少step就有多少个），具体见run_loop25行
         # Compute R, which is value of the last observation
+        # dhs：dir_highs
         obs = rbs[-1][-1]  # rbs的最后一个元素，应当是当前一步的timesteps值。即obs可以看作timesteps
         if obs.last():
             R = 0
         else:
-            minimap = np.array(obs.observation['feature_minimap'], dtype=np.float32)  # 类似105-111行
-            minimap = np.expand_dims(U.preprocess_minimap(minimap), axis=0)
-            screen = np.array(obs.observation['feature_screen'], dtype=np.float32)
-            screen = np.expand_dims(U.preprocess_screen(screen), axis=0)
-            # info = np.zeros([1, self.isize], dtype=np.float32)
-            # info[0, obs.observation['available_actions']] = 1
-            # info_plus_low: 当前step，房子数量，兵营数量，击杀奖励
             step_count = GL.get_value(ind_thread, "num_steps")
             supply_num = GL.get_value(ind_thread, "supply_num")
             barrack_num = GL.get_value(ind_thread, "barrack_num")
             killed_unit_score = obs.observation["score_cumulative"][5]
             killed_structure_score = obs.observation["score_cumulative"][6]
-            # info_plus_low = np.zeros([1, self.info_plus_size_low], dtype=np.float32)
-            # info_plus_low[0] = step_count, supply_num, barrack_num, killed_unit_score, killed_structure_score
-            # info_low = np.concatenate((info, info_plus_low), axis=1)
             info_low = np.zeros([1, self.info_plus_size_low], dtype=np.float32)
             info_low[0] = step_count, supply_num, barrack_num, killed_unit_score, killed_structure_score
             dir_high_usedToFeedLowNet = np.ones([1, 1], dtype=np.float32)
@@ -307,13 +298,24 @@ class A3CAgent(object):
             # 但这里要输入的act_id应该是step_low算出来的act_id
             act_id[0][0] = GL.get_value(ind_thread, "act_id_micro")
 
-            feed = {self.minimap: minimap,
-                    self.screen: screen,
-                    self.info_low: info_low,
-                    self.dir_high_usedToFeedLowNet: dir_high_usedToFeedLowNet,
-                    self.act_id: act_id,
-                    }
-            R = self.sess.run(self.value_low, feed_dict=feed)[0]
+            # 分层low_net
+            if dhs[0] != 4:  # low_net_cst
+                screen = np.array(obs.observation['feature_screen'], dtype=np.float32)
+                screen = np.expand_dims(U.preprocess_screen(screen), axis=0)
+                feed = {self.screen: screen,
+                        self.info_low: info_low,
+                        self.dir_high_usedToFeedLowNet: dir_high_usedToFeedLowNet,
+                        self.act_id: act_id}
+                R = self.sess.run(self.value_low_cst, feed_dict=feed)    # TODO：检查最后的[0]是否必要
+            else:  # low_net_atk
+                minimap = np.array(obs.observation['feature_minimap'], dtype=np.float32)
+                minimap = np.expand_dims(U.preprocess_minimap(minimap), axis=0)
+                feed = {self.minimap: minimap,
+                        self.info_low: info_low,
+                        self.dir_high_usedToFeedLowNet: dir_high_usedToFeedLowNet,
+                        self.act_id: act_id}
+                R = self.sess.run(self.value_low_atk, feed_dict=feed)    # TODO：检查最后的[0]是否必要
+                # R = self.sess.run(self.value_low, feed_dict=feed)[0]
 
         # Compute targets and masks
         minimaps = []
@@ -337,17 +339,11 @@ class A3CAgent(object):
             minimap = np.expand_dims(U.preprocess_minimap(minimap), axis=0)
             screen = np.array(obs.observation['feature_screen'], dtype=np.float32)
             screen = np.expand_dims(U.preprocess_screen(screen), axis=0)
-            # info = np.zeros([1, self.isize], dtype=np.float32)
-            # info[0, obs.observation['available_actions']] = 1
-            # info_plus_low: 当前step，房子数量，兵营数量，击杀奖励
             step_count = GL.get_value(ind_thread, "num_steps")
             supply_num = GL.get_value(ind_thread, "supply_num")
             barrack_num = GL.get_value(ind_thread, "barrack_num")
             killed_unit_score = obs.observation["score_cumulative"][5]
             killed_structure_score = obs.observation["score_cumulative"][6]
-            # info_plus_low = np.zeros([1, self.info_plus_size_low], dtype=np.float32)
-            # info_plus_low[0] = step_count, supply_num, barrack_num, killed_unit_score, killed_structure_score
-            # info_low = np.concatenate((info, info_plus_low), axis=1)
             info_low = np.zeros([1, self.info_plus_size_low], dtype=np.float32)
             info_low[0] = step_count, supply_num, barrack_num, killed_unit_score, killed_structure_score
 
@@ -384,17 +380,31 @@ class A3CAgent(object):
         infos = np.concatenate(infos, axis=0)
         # 实际上由于low_net是单步更新策略，所以以下feed的参数里面都只有一帧的数据
         # Train
-        feed = {self.minimap: minimaps,
-                self.screen: screens,
-                self.info_low: infos,
-                self.dir_high_usedToFeedLowNet: dir_high_usedToFeedLowNet,
-                self.act_id: act_ID,
-                self.value_target_low: value_target,
-                self.valid_spatial_action_low: valid_spatial_action,
-                self.spatial_action_selected_low: spatial_action_selected,
-                self.learning_rate_a_low: lr_a,
-                self.learning_rate_c_low: lr_c}
-        _, __, summary = self.sess.run([self.update_a_low, self.update_c_low, self.summary_op_low], feed_dict=feed)
+        print(minimaps.shape)
+        if dhs[i] != 4:  # low_net_cst
+            feed = {self.screen: screens,
+                    self.info_low: infos,
+                    self.dir_high_usedToFeedLowNet: dir_high_usedToFeedLowNet,
+                    self.act_id: act_ID,
+                    self.value_target_low: value_target,
+                    self.valid_spatial_action_low: valid_spatial_action,
+                    self.spatial_action_selected_low: spatial_action_selected,
+                    self.learning_rate_a_low: lr_a,
+                    self.learning_rate_c_low: lr_c}
+            _, __, summary = self.sess.run([self.update_a_low_cst, self.update_c_low_cst, self.summary_op_low],
+                                           feed_dict=feed)
+        else:  # low_net_atk
+            feed = {self.minimap: minimaps,
+                    self.info_low: infos,
+                    self.dir_high_usedToFeedLowNet: dir_high_usedToFeedLowNet,
+                    self.act_id: act_ID,
+                    self.value_target_low: value_target,
+                    self.valid_spatial_action_low: valid_spatial_action,
+                    self.spatial_action_selected_low: spatial_action_selected,
+                    self.learning_rate_a_low: lr_a,
+                    self.learning_rate_c_low: lr_c}
+            _, __, summary = self.sess.run([self.update_a_low_atk, self.update_c_low_atk, self.summary_op_low],
+                                           feed_dict=feed)
         self.summary_writer.add_summary(summary, cter)
 
     def update_high(self, ind_thread, rbs, dhs, disc, lr_a, lr_c, cter):
