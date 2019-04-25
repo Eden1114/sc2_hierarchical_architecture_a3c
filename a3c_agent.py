@@ -37,7 +37,7 @@ class A3CAgent(object):
         self.training = training
         self.summary_low = []
         self.summary_high = []
-        self.reward_sum_decay = 0.99  # 与config的discount同步，用于计算reward_decay，动态评估与改变学习率和epsilon-greedy
+        # self.reward_sum_decay = 0.99  # 与config的discount同步，用于计算reward_decay，动态评估与改变学习率和epsilon-greedy
         # Minimap size, screen size and info size
         assert msize == ssize
         self.msize = msize
@@ -97,8 +97,8 @@ class A3CAgent(object):
             # Set targets and masks
             # value_target是v现实，是算完以后传进来的（219行），和莫烦A3C一致（莫烦A3C中56和154行）
             # DHN add：
-            self.valid_spatial_action_low = tf.placeholder(tf.float32, [None], name='valid_spatial_action_low')
-            self.spatial_action_selected_low = tf.placeholder(tf.float32, [None, self.ssize ** 2],
+            # self.valid_spatial_action_low = tf.placeholder(tf.float32, [None], name='valid_spatial_action_low')
+            self.spatial_action_selected_low = tf.placeholder(tf.float32, [None, spatial_size],
                                                               name='spatial_action_selected_low')
             self.value_target_low = tf.placeholder(tf.float32, [None], name='value_target_low')
             self.value_target_high = tf.placeholder(tf.float32, [None], name='value_target_high')
@@ -122,8 +122,9 @@ class A3CAgent(object):
             # 下层网络：
             td_low = tf.subtract(self.value_target_low, self.value_low, name='TD_error_low')
             self.c_loss_low = tf.reduce_mean(tf.square(td_low))
-            log_prob_low = self.valid_spatial_action_low * action_low_log_prob  # valid_spatial_action含义是每一个step需不需要坐标参数，维度是“更新时历经的step数”
-            self.exp_v_low = log_prob_low * tf.stop_gradient(td_low)
+            # log_prob_low = self.valid_spatial_action_low * action_low_log_prob  # valid_spatial_action含义是每一个step需不需要坐标参数，维度是“更新时历经的step数”
+            # self.exp_v_low = log_prob_low * tf.stop_gradient(td_low)
+            self.exp_v_low = action_low_log_prob * tf.stop_gradient(td_low)
             self.a_loss_low = - tf.reduce_mean(self.exp_v_low)  # 这里不需要像莫烦那样添加一步“增加探索度的操作”了，因为在step_low里已经设置了增加探索度的操作
 
             # 上层网络：
@@ -262,7 +263,7 @@ class A3CAgent(object):
 
         return target[0], target[1]
 
-    def update_low(self, ind_thread, rbs, dhs, disc, lr_a, lr_c, cter, macro_type, coord_type):
+    def update_low(self, ind_thread, rbs, dhs, disc, lr_a, lr_c, counter, macro_type, coord_type):
         # rbs(replayBuffers)是[last_timesteps[0], actions[0], timesteps[0]]的集合（agent在一回合里进行了多少step就有多少个），具体见run_loop25行
         # Compute R, which is value of the last observation
         obs = rbs[-1][-1]  # rbs的最后一个元素，应当是当前一步的timesteps值。即obs可以看作timesteps
@@ -313,9 +314,9 @@ class A3CAgent(object):
 
         value_target = np.zeros([len(rbs)], dtype=np.float32)  # len(rbs) 计算出agent在回合里总共进行的步数
         value_target[-1] = R
-        valid_spatial_action = np.zeros([len(rbs)], dtype=np.float32)  # 含义是每一个step需不需要坐标参数
-        spatial_action_selected = np.zeros([len(rbs), self.ssize ** 2],
-                                           dtype=np.float32)  # 含义是每一个step需不需要坐标参数（第一维上），且具体坐标参数是什么（第二维上）
+        # valid_spatial_action = np.zeros([len(rbs)], dtype=np.float32)  # 含义是每一个step需不需要坐标参数
+        spatial_action_selected = np.zeros([len(rbs), spatial_size], dtype=np.float32)
+        # 含义是每一个step需不需要坐标参数（第一维上），且具体坐标参数是什么（第二维上）
 
         rbs.reverse()  # 先reverse 与莫烦A3C_continuous_action.py的代码类似
         micro_isdone = GL.get_value(ind_thread, "micro_isdone")
@@ -362,7 +363,7 @@ class A3CAgent(object):
             for arg, act_arg in zip(args, act_args):
                 if arg.name in ('screen', 'minimap', 'screen2'):
                     ind = act_arg[1] * self.ssize + act_arg[0]
-                    valid_spatial_action[i] = 1
+                    # valid_spatial_action[i] = 1
                     spatial_action_selected[i, ind] = 1
 
         GL.set_value(ind_thread, "sum_low_reward", sum_low_reward)
@@ -377,14 +378,16 @@ class A3CAgent(object):
                 # self.dir_high_usedToFeedLowNet: dir_highs,
                 # self.act_id: act_ids,
                 self.value_target_low: value_target,
-                self.valid_spatial_action_low: valid_spatial_action,
+                # self.valid_spatial_action_low: valid_spatial_action,
                 self.spatial_action_selected_low: spatial_action_selected,
                 self.learning_rate_a_low: lr_a,
                 self.learning_rate_c_low: lr_c}
         _, __, summary = self.sess.run([self.update_a_low, self.update_c_low, self.summary_op_low], feed_dict=feed)
-        self.summary_writer.add_summary(summary, cter)
+        # GL.add_value_list(ind_thread, "a_loss_low", self.a_loss_low)
+        # GL.add_value_list(ind_thread, "c_loss_low", self.c_loss_low)
+        self.summary_writer.add_summary(summary, counter)
 
-    def update_high(self, ind_thread, rbs, dhs, disc, lr_a, lr_c, cter):
+    def update_high(self, ind_thread, rbs, dhs, disc, lr_a, lr_c, counter):
         # rbs(replayBuffers)是[last_timesteps[0], actions[0], timesteps[0]]的集合（更新时经历了多少个step就有多少个），具体见run_loop25行
         # dhs(dir_high_buffers) 是指令序号的集合。比如一共有5个宏动作，则dhs形如[5, 4, 1, 2, 3, 4, 2, 1, ......]
         dir_high_selected = np.zeros([len(rbs), num_macro_action],
@@ -482,8 +485,8 @@ class A3CAgent(object):
                     spatial_action_selected[i, ind] = 1
 
         GL.set_value(ind_thread, "sum_high_reward", sum_high_reward)
-        high_reward_decay = sum_high_reward * self.reward_sum_decay
-        GL.set_value(ind_thread, "high_reward_decay", high_reward_decay)
+        # high_reward_decay = sum_high_reward * self.reward_sum_decay
+        # GL.set_value(ind_thread, "high_reward_decay", high_reward_decay)
         minimaps = np.concatenate(minimaps, axis=0)
         screens = np.concatenate(screens, axis=0)
         infos = np.concatenate(infos, axis=0)
@@ -496,7 +499,10 @@ class A3CAgent(object):
                 self.learning_rate_a_high: lr_a,
                 self.learning_rate_c_high: lr_c}
         _, __, summary = self.sess.run([self.update_a_high, self.update_c_high, self.summary_op_high], feed_dict=feed)
-        self.summary_writer.add_summary(summary, cter)
+        # GL.add_value_list(ind_thread, "a_loss_high", self.a_loss_high)
+        # GL.add_value_list(ind_thread, "c_loss_high", self.c_loss_high)
+        # print("a_loss_high: ", self.a_loss_high)
+        self.summary_writer.add_summary(summary, counter)
         GL.set_value(ind_thread, "micro_isdone", [])
 
     def save_model(self, path, count):

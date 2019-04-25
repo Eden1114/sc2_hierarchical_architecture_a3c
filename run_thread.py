@@ -224,16 +224,24 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                         replay_buffer_2 = []
                         dir_high_buffer_2 = []
                     iswin_self = GL.get_value(ind_thread, "iswin")
+                    sum_high_reward = GL.get_value(ind_thread, "sum_high_reward")
+                    sum_low_reward = GL.get_value(ind_thread, "sum_low_reward")
+                    high_reward_avg = sum_high_reward / num_steps
+                    if num_call_step_low == 0:
+                        low_reward_avg = sum_low_reward
+                    else:
+                        low_reward_avg = sum_low_reward / num_call_step_low
+                    # a_loss_low = GL.get_value(ind_thread, "a_loss_low")
+                    # c_loss_low = GL.get_value(ind_thread, "c_loss_low")
+                    # a_loss_high = GL.get_value(ind_thread, "a_loss_high")
+                    # c_loss_high = GL.get_value(ind_thread, "c_loss_high")
                     print("=====" * 10)
                     print("Episode_counter: ", counter)
                     print("state.reward_isWin: ", iswin)
                     print("self_isWin: ", iswin_self)
-                    print('Episode score:  ', score)
-                    high_reward_avg = GL.get_value(ind_thread, "sum_high_reward") / num_steps
-                    if num_call_step_low == 0:
-                        low_reward_avg = GL.get_value(ind_thread, "sum_low_reward")
-                    else:
-                        low_reward_avg = GL.get_value(ind_thread, "sum_low_reward") / num_call_step_low
+                    print('Episode score: ', score)
+                    print('High_reward_avg: %.4f' % high_reward_avg)
+                    print('Low_reward_avg:  %.4f' % low_reward_avg)
                     GL.add_value_list(ind_thread, "victory_or_defeat", iswin)
                     GL.add_value_list(ind_thread, "victory_or_defeat_self", iswin_self)
                     GL.add_value_list(ind_thread, "reward_high_list", high_reward_avg)
@@ -243,6 +251,12 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                     GL.add_value_list(ind_thread_all, "victory_or_defeat", iswin)
                     GL.add_value_list(ind_thread_all, "victory_or_defeat_self", iswin_self)
                     GL.add_value_list(ind_thread_all, "episode_score_list", score)
+                    GL.add_value_list(ind_thread_all, "reward_high_list", high_reward_avg)
+                    GL.add_value_list(ind_thread_all, "reward_low_list", low_reward_avg)
+                    # GL.add_value_list(ind_thread_all, "a_loss_low", a_loss_low)
+                    # GL.add_value_list(ind_thread_all, "c_loss_low", c_loss_low)
+                    # GL.add_value_list(ind_thread_all, "a_loss_high", a_loss_high)
+                    # GL.add_value_list(ind_thread_all, "c_loss_high", c_loss_high)
                     # 存储reward_decay，用于调节学习率和epsilon-greedy的衰减程度
                     # high_reward_decay = FLAGS.discount * high_reward_avg
                     # GL.set_value(high_reward_decay)
@@ -254,37 +268,44 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                             np.save(
                                 "./DataForAnalysis/reward_of_episode_" + str(counter) + "_thread_" + str(i) + ".npy",
                                 GL.get_value(i, "reward_of_episode"))
-                            np.save(
-                                "./DataForAnalysis/reward_high_list_thread_" + str(i) + "_episode_" + str(
-                                    counter) + ".npy",
-                                GL.get_value(i, "reward_high_list"))
-                            np.save(
-                                "./DataForAnalysis/reward_low_list_thread_" + str(i) + "_episode_" + str(
-                                    counter) + ".npy",
-                                GL.get_value(i, "reward_low_list"))
+                            np.save("./DataForAnalysis/reward_high_list_thread_" + str(i) + "_episode_" + str(
+                                    counter) + ".npy", GL.get_value(i, "reward_high_list"))
+                            np.save("./DataForAnalysis/reward_low_list_thread_" + str(i) + "_episode_" + str(
+                                    counter) + ".npy", GL.get_value(i, "reward_low_list"))
                             np.save("./DataForAnalysis/victory_or_defeat_thread_" + str(i) + "_episode_" + str(
                                 counter) + ".npy", GL.get_value(i, "victory_or_defeat"))
                             np.save("./DataForAnalysis/victory_or_defeat_self_thread_" + str(i) + "_episode_" + str(
                                 counter) + ".npy", GL.get_value(i, "victory_or_defeat_self"))
                             np.save("./DataForAnalysis/episode_score_list_thread_" + str(i) + "_episode_" + str(
                                 counter) + ".npy", GL.get_value(i, "episode_score_list"))
+                            # np.save("./DataForAnalysis/a_loss_low_list_thread_" + str(i) + "_episode_" + str(
+                            #     counter) + ".npy", GL.get_value(i, "a_loss_low"))
+                            # np.save("./DataForAnalysis/c_loss_low_list_thread_" + str(i) + "_episode_" + str(
+                            #     counter) + ".npy", GL.get_value(i, "c_loss_low"))
+                            # np.save("./DataForAnalysis/a_loss_high_list_thread_" + str(i) + "_episode_" + str(
+                            #     counter) + ".npy", GL.get_value(i, "a_loss_high"))
+                            # np.save("./DataForAnalysis/c_loss_high_list_thread_" + str(i) + "_episode_" + str(
+                            #     counter) + ".npy", GL.get_value(i, "c_loss_high"))
 
                         # 存储全episode的累积数据
                         np.save("./DataForAnalysis/victory_or_defeat_thread_" + str(ind_thread_all) + "episode" + str(
                             counter) + ".npy", GL.get_value(ind_thread_all, "victory_or_defeat"))
-                        np.save("./DataForAnalysis/victory_or_defeat_self_thread_" + str(
-                            ind_thread_all) + "_episode_" + str(
+                        np.save("./DataForAnalysis/victory_or_defeat_self_thread_" + str(ind_thread_all) + "_episode_" + str(
                             counter) + ".npy", GL.get_value(ind_thread_all, "victory_or_defeat_self"))
                         np.save("./DataForAnalysis/episode_score_list_thread_" + str(ind_thread_all) + "episode" + str(
                             counter) + ".npy", GL.get_value(ind_thread_all, "episode_score_list"))
-                        np.save(
-                            "./DataForAnalysis/reward_high_list_thread_" + str(ind_thread_all) + "_episode_" + str(
-                                counter) + ".npy",
-                            GL.get_value(i, "reward_high_list"))
-                        np.save(
-                            "./DataForAnalysis/reward_low_list_thread_" + str(ind_thread_all) + "_episode_" + str(
-                                counter) + ".npy",
-                            GL.get_value(i, "reward_low_list"))
+                        np.save("./DataForAnalysis/reward_high_list_thread_" + str(ind_thread_all) + "_episode_" + str(
+                                counter) + ".npy", GL.get_value(ind_thread_all, "reward_high_list"))
+                        np.save("./DataForAnalysis/reward_low_list_thread_" + str(ind_thread_all) + "_episode_" + str(
+                                counter) + ".npy", GL.get_value(ind_thread_all, "reward_low_list"))
+                        # np.save("./DataForAnalysis/a_loss_low_list_thread_" + str(ind_thread_all) + "_episode_" + str(
+                        #     counter) + ".npy", GL.get_value(ind_thread_all, "a_loss_low"))
+                        # np.save("./DataForAnalysis/c_loss_low_list_thread_" + str(ind_thread_all) + "_episode_" + str(
+                        #     counter) + ".npy", GL.get_value(ind_thread_all, "c_loss_low"))
+                        # np.save("./DataForAnalysis/a_loss_high_list_thread_" + str(ind_thread_all) + "_episode_" + str(
+                        #     counter) + ".npy", GL.get_value(ind_thread_all, "a_loss_high"))
+                        # np.save("./DataForAnalysis/c_loss_high_list_thread_" + str(ind_thread_all) + "_episode_" + str(
+                        #     counter) + ".npy", GL.get_value(ind_thread_all, "c_loss_high"))
                     if counter >= FLAGS.max_episodes:  # 超过设定的最大训练回合数后，退出循环（等于线程结束）
                         break
 

@@ -96,11 +96,16 @@ def _main(unused_argv):
         print(stopwatch.sw)
     # 数据记录
     for i in range(PARALLEL + 1):
-        np.save("./DataForAnalysis/reward_list_thread_" + str(i) + ".npy", GL.get_value(i, "reward_list"))
+        # np.save("./DataForAnalysis/reward_list_thread_" + str(i) + ".npy", GL.get_value(i, "reward_list"))
         np.save("./DataForAnalysis/victory_or_defeat_thread_" + str(i) + ".npy", GL.get_value(i, "victory_or_defeat"))
-        np.save("./DataForAnalysis/victory_or_defeat_self_thread_" + str(i) + ".npy",
-                GL.get_value(i, "victory_or_defeat_self"))
+        np.save("./DataForAnalysis/victory_or_defeat_self_thread_" + str(i) + ".npy", GL.get_value(i, "victory_or_defeat_self"))
         np.save("./DataForAnalysis/episode_score_list_thread_" + str(i) + ".npy", GL.get_value(i, "episode_score_list"))
+        np.save("./DataForAnalysis/reward_high_list_thread_" + str(i) + ".npy", GL.get_value(i, "reward_high_list"))
+        np.save("./DataForAnalysis/reward_low_list_thread_" + str(i) + ".npy", GL.get_value(i, "reward_low_list"))
+        # np.save("./DataForAnalysis/a_loss_low_list_thread_" + str(i) + ".npy", GL.get_value(i, "a_loss_low"))
+        # np.save("./DataForAnalysis/c_loss_low_list_thread_" + str(i) + ".npy", GL.get_value(i, "c_loss_low"))
+        # np.save("./DataForAnalysis/a_loss_high_list_thread_" + str(i) + ".npy", GL.get_value(i, "a_loss_high"))
+        # np.save("./DataForAnalysis/c_loss_high_list_thread_" + str(i) + ".npy", GL.get_value(i, "c_loss_high"))
     print('Fin. ')
 
 

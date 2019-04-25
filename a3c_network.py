@@ -21,10 +21,10 @@ def build_high_net(minimap, screen, info, num_macro_action):
             spool2 = tf.nn.max_pool(sconv2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
             info_high = layers.fully_connected(layers.flatten(info), 16, activation_fn=None,
                                                scope='info_high')
-            info_feat = layers.fully_connected(info_high, 128, activation_fn=tf.nn.relu,
-                                               scope='info_feat')
+            info_fc = layers.fully_connected(info_high, 128, activation_fn=tf.nn.relu,
+                                               scope='info_fc')
 
-            full_concat = tf.concat([layers.flatten(mpool2), layers.flatten(spool2), info_feat], axis=1)
+            full_concat = tf.concat([layers.flatten(mpool2), layers.flatten(spool2), info_fc], axis=1)
             # print(full_concat.shape)
             # full_concat.shape = 262176[conv=32*5]；131088[conv=16*5]；16400[max_pool]；16512[pool+info_feat]
             # full_feature_high = layers.fully_connected(full_concat, 256, activation_fn=tf.nn.relu,
@@ -72,14 +72,14 @@ def build_low_net(minimap, screen, info, spatial_size):
             spool2 = tf.nn.max_pool(sconv2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
             info_low = layers.fully_connected(layers.flatten(info), 16, activation_fn=None,
                                                scope='info_low')
-            info_feat = layers.fully_connected(info_low, 128, activation_fn=tf.nn.relu,
-                                               scope='info_feat')
+            info_fc = layers.fully_connected(info_low, 128, activation_fn=tf.nn.relu,
+                                               scope='info_fc')
 
-            full_concat = tf.concat([layers.flatten(mpool2), layers.flatten(spool2), info_feat], axis=1)
+            full_concat = tf.concat([layers.flatten(mpool2), layers.flatten(spool2), info_fc], axis=1)
         with tf.variable_scope('actor_low'):
             actor_hidden_low = layers.fully_connected(full_concat, 128, activation_fn=tf.nn.relu,
                                                       scope='actor_hidden_low_1')
-            actor_hidden_low_2 = layers.fully_connected(actor_hidden_low, 512, activation_fn=tf.nn.relu,
+            actor_hidden_low_2 = layers.fully_connected(actor_hidden_low, 256, activation_fn=tf.nn.relu,
                                                         scope='actor_hidden_low_2')
             action_low_prob = tf.layers.dense(actor_hidden_low_2, spatial_size, activation=tf.nn.softmax,
                                               kernel_initializer=w_init,
