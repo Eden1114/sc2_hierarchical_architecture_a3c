@@ -71,7 +71,7 @@ def build_low_net(minimap, screen, info, spatial_size):
             sconv2 = layers.conv2d(spool1, 32, 3, scope='sconv2')
             spool2 = tf.nn.max_pool(sconv2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
             info_low = layers.fully_connected(layers.flatten(info), 16, activation_fn=None,
-                                               scope='info_high')
+                                               scope='info_low')
             info_feat = layers.fully_connected(info_low, 128, activation_fn=tf.nn.relu,
                                                scope='info_feat')
 
