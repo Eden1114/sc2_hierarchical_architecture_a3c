@@ -163,7 +163,7 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
         dir_high_buffer_1 = []
         replay_buffer_2 = []
         dir_high_buffer_2 = []
-        update_low_iter = 0
+        # update_low_iter = 0
 
         # 下行中的run_loop是个生成器，for循环每次进入到run_loop里，得到yield后返回，继续进行循环体里的语句，for循环再次进入run_loop后从run_loop的yield的下一条语句开始执行，执行到yield再次返回，继续执行循环体语句...
         for recorder, is_done, num_steps, call_step_low, num_call_step_low, macro_type, coord_type in run_loop(
@@ -187,26 +187,24 @@ def run_thread(agent, map_name, visualize, ind_thread, FLAGS, LOCK):  # A3CAgent
                 # print('num_step:', num_steps)
 
                 # 更新下层网络
-                # if call_step_low:
-                if num_call_step_low % 10 == 1 and num_call_step_low > update_low_iter:
-                    learning_rate_a_low = FLAGS.learning_rate * (
-                            1 - 0.9 * counter / FLAGS.max_episodes)  # 根据当前进行完的回合数量修改学习速率（减小）
-                    learning_rate_c_low = FLAGS.learning_rate * (
-                            1 - 0.9 * counter / FLAGS.max_episodes)  # 根据当前进行完的回合数量修改学习速率（减小）
+                if call_step_low:
+                    # if num_call_step_low % 10 == 1 and num_call_step_low > update_low_iter:
+                    # 根据当前进行完的回合数量修改学习速率（减小）
+                    learning_rate_a_low = FLAGS.learning_rate * (1 - 0.9 * counter / FLAGS.max_episodes)
+                    learning_rate_c_low = FLAGS.learning_rate * (1 - 0.9 * counter / FLAGS.max_episodes)
                     agent.update_low(ind_thread, replay_buffer_1, dir_high_buffer_1, FLAGS.discount,
                                      learning_rate_a_low, learning_rate_c_low, counter, macro_type, coord_type)
                     replay_buffer_1 = []
                     dir_high_buffer_1 = []
-                    update_low_iter = num_call_step_low
+                    # update_low_iter = num_call_step_low
 
                 # 更新上层网络
                 ind_last = GL.get_value(ind_thread, "ind_micro")
                 if ind_last == -99 or ind_last == 666:
                     # if num_steps % 50 == 0:
-                    learning_rate_a_high = FLAGS.learning_rate * (
-                            1 - 0.9 * counter / FLAGS.max_episodes)  # 根据当前进行完的回合数量修改学习速率（减小）
-                    learning_rate_c_high = FLAGS.learning_rate * (
-                            1 - 0.9 * counter / FLAGS.max_episodes)  # 根据当前进行完的回合数量修改学习速率（减小）
+                    # 根据当前进行完的回合数量修改学习速率（减小）
+                    learning_rate_a_high = FLAGS.learning_rate * (1 - 0.9 * counter / FLAGS.max_episodes)
+                    learning_rate_c_high = FLAGS.learning_rate * (1 - 0.9 * counter / FLAGS.max_episodes)
                     agent.update_high(ind_thread, replay_buffer_2, dir_high_buffer_2, FLAGS.discount,
                                       learning_rate_a_high, learning_rate_c_high, counter)
                     replay_buffer_2 = []
