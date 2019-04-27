@@ -62,8 +62,8 @@ def run_loop(agents, env, max_steps, ind_thread):
                     ind_todo = GL.get_value(ind_thread, "ind_micro")
 
                 dir_high = GL.get_value(ind_thread, "dir_high")
-                # print("dir_high: ", dir_high)
-                # print("ind_todo: ", ind_todo)
+                print("dir_high: ", dir_high)
+                print("ind_todo: ", ind_todo)
                 action, call_step_low, act_id, macro_type, coord_type = action_micro(ind_thread, dir_high,
                                                                                      ind_todo)
                 # 关键一步，调用了macro_action.action_micro计算出选择的action和其他参数。

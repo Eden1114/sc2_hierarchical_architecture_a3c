@@ -23,7 +23,8 @@ def config_init():
     flags.DEFINE_integer("screen_resolution", 64, "Resolution for screen feature layers.")
     flags.DEFINE_integer("minimap_resolution", 64, "Resolution for minimap feature layers.")
     flags.DEFINE_integer("step_mul", 8, "Game steps per agent step.")  # APM参数，step_mul为8相当于APM180左右
-    flags.DEFINE_string("agent", "a3c_agent.A3CAgent", "Which agent to run.")
+    # flags.DEFINE_string("agent", "a3c_agent.A3CAgent", "Which agent to run.")
+    flags.DEFINE_string("agent", "ppo_agent.PPOAgent", "Which agent to run.")
     # flags.DEFINE_string("net", "fcn", "atari or fcn.")
     flags.DEFINE_string("net", "hierarchical", "network architecture for logging")
     flags.DEFINE_string("agent_race", 'terran', "Agent's race.")
@@ -38,6 +39,7 @@ def config_init():
     flags.DEFINE_bool("profile", False, "Whether to turn on code profiling.")
     flags.DEFINE_bool("trace", False, "Whether to trace the code execution.")
     # 线程数的最佳值是4 @ 1080ti单卡 + i7 6700
+    # 若采用ppo 算法，则线程数不可调，固定为1
     flags.DEFINE_integer("parallel", 1, "How many instances to run in parallel.")
     flags.DEFINE_bool("save_replay", False, "Whether to save a replay at the end.")
     return FLAGS

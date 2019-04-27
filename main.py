@@ -27,6 +27,7 @@ FLAGS(sys.argv)
 if FLAGS.training:
     PARALLEL = FLAGS.parallel  # PARALLEL 指定开几个线程（几个游戏窗口在跑星际2）
     DEVICE = ['/gpu:' + dev for dev in FLAGS.device.split(',')]
+    # DEVICE = ['/cpu:0']
 else:
     # PARALLEL = 1
     PARALLEL = FLAGS.parallel  # PARALLEL 指定开几个线程（几个游戏窗口在跑星际2）
@@ -53,21 +54,21 @@ def _main(unused_argv):
     maps.get(FLAGS.map)  # Assert the map exists.
     # Setup agents
     agent_module, agent_name = FLAGS.agent.rsplit(".", 1)
-    agent_cls = getattr(importlib.import_module(agent_module), agent_name)  # 经过两行操作后，agent_cls就相当于A3CAgent类了，可用其构造对象
+    agent_cls = getattr(importlib.import_module(agent_module), agent_name)  # 经过两行操作后，agent_cls就相当于PPOAgent类了，可用其构造对象
     agents = []
     for i in range(PARALLEL):
-        # 用agent_cls(A3CAgent)构造对象（调用了a3c_agent文件__init__构造函数）
+        # 用agent_cls(PPOAgent)构造对象（调用了ppo_agent文件__init__构造函数）
         agent = agent_cls(FLAGS.training, FLAGS.minimap_resolution, FLAGS.screen_resolution)
-        # 现在agent就是一个被生成好的A3CAgent对象了，利用build_model创建所有需要的tf节点
+        # 现在agent就是一个被生成好的PPOAgent对象了，利用build_model创建所有需要的tf节点
         agent.build_model(i > 0, DEVICE[i % len(DEVICE)])
-        agents.append(agent)  # agents是多个A3CAgent对象合集（如果PARALLEL大于1的话，不然就只有一个对象在里面）
+        agents.append(agent)  # agents是多个PPOAgent对象合集（如果PARALLEL大于1的话，不然就只有一个对象在里面）
     config = tf.ConfigProto(allow_soft_placement=True)  # 允许tf自动选择一个存在并且可用的设备来运行操作
     config.gpu_options.allow_growth = True  # 动态申请显存
     sess = tf.Session(config=config)
     summary_writer = tf.summary.FileWriter(LOG)  # 记录日志，供tensorboard使用
     for i in range(PARALLEL):
         agents[i].setup(sess, summary_writer)  # setup各个agent，即 将唯一的sess和summary_writer赋予每个agent的进程
-    # agent就是“包含agents.append(agent)的循环”当中的那个局部变量agent，局部变量能够在外部使用，大概是python(3)神奇的特性...所以agent就是最后一个创建的A3CAgent对象
+    # agent就是“包含agents.append(agent)的循环”当中的那个局部变量agent，局部变量能够在外部使用，大概是python(3)神奇的特性...所以agent就是最后一个创建的PPOAgent对象
     agent.initialize()  # run(tf.global_variables_initializer())以初始化每个agent中的tf图
     # 模型读取
     if not FLAGS.training:  # 若不是训练模式
