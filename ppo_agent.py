@@ -15,9 +15,14 @@ import random
 import globalvar as GL
 import utils as U
 
-A_UPDATE_STEPS = 10
-C_UPDATE_STEPS = 10
-METHOD = [  dict(name='kl_pen', kl_target=0.01, lam=0.5),   # KL penalty
+A_UPDATE_STEPS_high = 10
+C_UPDATE_STEPS_high = 10
+A_UPDATE_STEPS_low = 10
+C_UPDATE_STEPS_low = 10
+METHOD_high = [  dict(name='kl_pen', kl_target=0.01, lam=0.5),   # KL penalty
+            dict(name='clip', epsilon=0.2),                 # Clipped surrogate objective, find this is better
+][1]        # choose the method for optimization
+METHOD_low = [  dict(name='kl_pen', kl_target=0.01, lam=0.5),   # KL penalty
             dict(name='clip', epsilon=0.2),                 # Clipped surrogate objective, find this is better
 ][1]        # choose the method for optimization
 
@@ -90,7 +95,7 @@ class PPOAgent(object):
                                                                                                     self.info_high,
                                                                                                     num_macro_action)
             # oldpi只用来存actor参数（更新时使用）
-            self.dir_high_old, _, self.a_params_high_old, _ = build_high_net("oldpi",
+            self.dir_high_old, _, self.a_params_high_old, __ = build_high_net("oldpi",
                                                                                                     self.minimap,
                                                                                                     self.screen,
                                                                                                     self.info_high,
@@ -100,11 +105,20 @@ class PPOAgent(object):
 
 
 
-            self.spatial_action_low, self.value_low, self.a_params_low, self.c_params_low = build_low_net(self.minimap,
+            self.spatial_action_low, self.value_low, self.a_params_low, self.c_params_low = build_low_net("pi",
+                                                                                                          self.minimap,
                                                                                                           self.screen,
                                                                                                           self.info_low,
                                                                                                           self.dir_high_usedToFeedLowNet,
                                                                                                           self.act_id)
+            self.spatial_action_low_old, _, self.a_params_low_old, __ = build_low_net("oldpi",
+                                                                                                          self.minimap,
+                                                                                                          self.screen,
+                                                                                                          self.info_low,
+                                                                                                          self.dir_high_usedToFeedLowNet,
+                                                                                                          self.act_id)
+            with tf.variable_scope('update_low_oldpi'):
+                self.update_low_oldpi_op = [oldp.assign(p) for p, oldp in zip(self.a_params_low, self.a_params_low_old)]
 
 
             self.value_target_high = tf.placeholder(tf.float32, [None], name='value_target_high')
@@ -122,12 +136,15 @@ class PPOAgent(object):
             dir_prob_high_old = tf.reduce_sum(self.dir_high_old * self.dir_high_selected, axis=1)
             dir_log_prob_high_old = tf.log(tf.clip_by_value(dir_prob_high_old, 1e-10, 1.))
 
-            spatial_action_prob_low = tf.reduce_sum(self.spatial_action_low * self.spatial_action_selected_low, axis=1)
             # 用法可以参考Matrix_dot-multiply.py
             # spatial_action是网络输出的坐标，维度是“更新时历经的step数” x “ssize**2”
             # spatial_action_selected含义是每一个step需不需要坐标参数（第一维上），且具体坐标参数是什么（第二维上）。spatial_action_selected维度是“更新时历经的step数” x “ssize**2”
-            spatial_action_log_prob_low = tf.log(tf.clip_by_value(spatial_action_prob_low, 1e-10, 1.))  # 维度是“更新时历经的step数”
-
+            spatial_action_prob_low = tf.clip_by_value(tf.reduce_sum(self.spatial_action_low * self.spatial_action_selected_low, axis=1), 1e-10, 1.)
+            spatial_action_log_prob_low = tf.log(spatial_action_prob_low)  # 维度是“更新时历经的step数”
+            spatial_action_prob_low_old = tf.clip_by_value(tf.reduce_sum(self.spatial_action_low_old * self.spatial_action_selected_low, axis=1), 1e-10, 1.)
+            spatial_action_log_prob_low_old = tf.log(spatial_action_prob_low_old)  # 维度是“更新时历经的step数”
+            # 原a3c_agent中还有一个  “log_prob_low = self.valid_spatial_action_low * spatial_action_log_prob_low”  的操作，当某个step不需要坐标时则把该step的概率置为0
+            # 但由于在目前的设计中，每次调用low网络必然是为了算坐标，则不需要再进行这一步操作
 
             self.summary_high.append(tf.summary.histogram('dir_prob_high', dir_prob_high))
             self.summary_low.append(tf.summary.histogram('spatial_action_prob_low', spatial_action_prob_low))
@@ -139,17 +156,18 @@ class PPOAgent(object):
             self.ratio_high = dir_log_prob_high / dir_log_prob_high_old
             self.surr_high = self.ratio_high * td_high
             self.c_loss_high = tf.reduce_mean(tf.square(td_high))
-            self.exp_v_high = dir_log_prob_high * tf.stop_gradient(td_high)
             self.a_loss_high = - tf.reduce_mean(tf.minimum(
                     self.surr_high,
-                    tf.clip_by_value(self.ratio_high, 1.-METHOD['epsilon'], 1.+METHOD['epsilon'])*td_high))
+                    tf.clip_by_value(self.ratio_high, 1.-METHOD_high['epsilon'], 1.+METHOD_high['epsilon'])*td_high))
 
             # 下层网络：
             td_low = tf.subtract(self.value_target_low, self.value_low, name='TD_error_low')
+            self.ratio_low =  spatial_action_log_prob_low /  spatial_action_log_prob_low_old
+            self.surr_low = self.ratio_low * td_low
             self.c_loss_low = tf.reduce_mean(tf.square(td_low))
-            log_prob_low = self.valid_spatial_action_low * spatial_action_log_prob_low  # valid_spatial_action含义是每一个step需不需要坐标参数，维度是“更新时历经的step数”
-            self.exp_v_low = log_prob_low * tf.stop_gradient(td_low)
-            self.a_loss_low = - tf.reduce_mean(self.exp_v_low)  # 这里不需要像莫烦那样添加一步“增加探索度的操作”了，因为在step_low里已经设置了增加探索度的操作
+            self.a_loss_low = - tf.reduce_mean(tf.minimum(
+                    self.surr_low,
+                    tf.clip_by_value(self.ratio_low, 1.-METHOD_low['epsilon'], 1.+METHOD_low['epsilon'])*td_low))
 
             # 添加summary：
             self.summary_low.append(tf.summary.scalar('a_loss_low', self.a_loss_low))
@@ -281,6 +299,7 @@ class PPOAgent(object):
         return target[0], target[1]
 
     def update_low(self, ind_thread, rbs, dhs, disc, lr_a, lr_c, cter, macro_type, coord_type):
+        self.sess.run(self.update_low_oldpi_op)
         # rbs(replayBuffers)是[last_timesteps[0], actions[0], timesteps[0]]的集合（agent在一回合里进行了多少step就有多少个），具体见run_loop25行
         # Compute R, which is value of the last observation
         obs = rbs[-1][-1]  # rbs的最后一个元素，应当是当前一步的timesteps值。即obs可以看作timesteps
@@ -337,6 +356,9 @@ class PPOAgent(object):
         micro_isdone = GL.get_value(ind_thread, "micro_isdone")
         micro_isdone.reverse()
         sum_low_reward = GL.get_value(ind_thread, "sum_low_reward")
+        dir_high_usedToFeedLowNet = np.ones([1, 1], dtype=np.float32)
+        act_ID = np.ones([1, 1], dtype=np.float32)
+
         for i, [obs, action, next_obs] in enumerate(rbs):  # agent在回合里进行了多少步，就进行多少轮循环
             minimap = np.array(obs.observation['feature_minimap'], dtype=np.float32)  # 类似105-111行
             minimap = np.expand_dims(U.preprocess_minimap(minimap), axis=0)
@@ -355,13 +377,11 @@ class PPOAgent(object):
             # info_low = np.concatenate((info, info_plus_low), axis=1)
             info_low = np.zeros([1, self.info_plus_size_low], dtype=np.float32)
             info_low[0] = step_count, supply_num, barrack_num, killed_unit_score, killed_structure_score
-
             minimaps.append(minimap)
             screens.append(screen)
             infos.append(info_low)
-            dir_high_usedToFeedLowNet = np.ones([1, 1], dtype=np.float32)
+
             dir_high_usedToFeedLowNet[0][0] = dhs[i]
-            act_ID = np.ones([1, 1], dtype=np.float32)
             act_ID[0][0] = GL.get_value(ind_thread, "act_id_micro")
             # dir_highs.append(dir_high_usedToFeedLowNet)
             # act_ids.append(act_ID)
@@ -389,7 +409,33 @@ class PPOAgent(object):
         infos = np.concatenate(infos, axis=0)
         # 实际上由于low_net是单步更新策略，所以以下feed的参数里面都只有一帧的数据
         # Train
-        feed = {self.minimap: minimaps,
+        print("train low begins")
+        feed_a = {self.minimap: minimaps,
+                self.screen: screens,
+                self.info_low: infos,
+                self.dir_high_usedToFeedLowNet: dir_high_usedToFeedLowNet,
+                self.act_id: act_ID,
+                self.value_target_low: value_target,
+                self.valid_spatial_action_low: valid_spatial_action,
+                self.spatial_action_selected_low: spatial_action_selected,
+                self.learning_rate_a_low: lr_a}
+        for _ in range(A_UPDATE_STEPS_low):
+            self.sess.run(self.update_a_low, feed_dict=feed_a)
+
+        feed_c = {self.minimap: minimaps,
+                self.screen: screens,
+                self.info_low: infos,
+                self.dir_high_usedToFeedLowNet: dir_high_usedToFeedLowNet,
+                self.act_id: act_ID,
+                self.value_target_low: value_target,
+                self.valid_spatial_action_low: valid_spatial_action,
+                self.spatial_action_selected_low: spatial_action_selected,
+                self.learning_rate_c_low: lr_c}
+        for _ in range(C_UPDATE_STEPS_low):
+            self.sess.run(self.update_c_low, feed_dict=feed_c)
+        print("train low ends")
+
+        feed_s = {self.minimap: minimaps,
                 self.screen: screens,
                 self.info_low: infos,
                 self.dir_high_usedToFeedLowNet: dir_high_usedToFeedLowNet,
@@ -399,8 +445,10 @@ class PPOAgent(object):
                 self.spatial_action_selected_low: spatial_action_selected,
                 self.learning_rate_a_low: lr_a,
                 self.learning_rate_c_low: lr_c}
-        _, __, summary = self.sess.run([self.update_a_low, self.update_c_low, self.summary_op_low], feed_dict=feed)
+        summary = self.sess.run(self.summary_op_low, feed_dict=feed_s)
         self.summary_writer.add_summary(summary, cter)
+        print("summarize low ends")
+
 
     def update_high(self, ind_thread, rbs, dhs, disc, lr_a, lr_c, cter):
         self.sess.run(self.update_high_oldpi_op)
@@ -515,7 +563,7 @@ class PPOAgent(object):
                 self.value_target_high: value_target,
                 self.dir_high_selected: dir_high_selected,
                 self.learning_rate_a_high: lr_a}
-        for _ in range(A_UPDATE_STEPS):
+        for _ in range(A_UPDATE_STEPS_high):
             self.sess.run(self.update_a_high, feed_dict=feed_a)
 
         feed_c = {self.minimap: minimaps,
@@ -523,7 +571,7 @@ class PPOAgent(object):
                   self.info_high: infos,
                   self.value_target_high: value_target,
                   self.learning_rate_c_high: lr_c}
-        for _ in range(C_UPDATE_STEPS):
+        for _ in range(C_UPDATE_STEPS_high):
             self.sess.run(self.update_c_high, feed_dict=feed_c)
         print("train high ends")
 
