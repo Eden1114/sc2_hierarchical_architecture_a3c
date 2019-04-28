@@ -286,7 +286,7 @@ class A3CAgent(object):
             # info_plus_low[0] = step_count, supply_num, barrack_num, killed_unit_score, killed_structure_score
             # info_low = np.concatenate((info, info_plus_low), axis=1)
             info_low = np.zeros([1, self.info_size_low], dtype=np.float32)
-            dir_high = dhs[0]
+            dir_high = dhs[-1]
             act_id = GL.get_value(ind_thread, "act_id_micro")
             info_low[
                 0] = step_count, supply_num, barrack_num, killed_unit_score, killed_structure_score, dir_high, act_id
@@ -393,7 +393,7 @@ class A3CAgent(object):
         dir_high_selected = np.zeros([len(rbs), num_macro_action],
                                      dtype=np.float32)  # 含义是每一个step需不需要坐标参数（第一维上），且具体坐标参数是什么（第二维上）
         for i in range(len(rbs)):
-            dir_high_selected[i, dhs[i][0] - 1] = 1
+            dir_high_selected[i, dhs[i][0]] = 1
         # Compute R, which is value of the last observation
         obs = rbs[-1][-1]  # rbs的最后一个元素，应当是当前一步的timesteps值。即obs可以看作timesteps
         if obs.last():
