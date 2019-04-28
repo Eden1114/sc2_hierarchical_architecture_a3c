@@ -78,7 +78,7 @@ def action_micro(ind_thread, dir_high, ind_todo):
         if len(enemy_location_minimap) == 0:
             # 从minimap获取不到敌人位置时，call_step_low
             location_to_attack = [random.randint(0, 63), random.randint(0, 63)]
-            call_step_low = True
+            # call_step_low = True
         else:
             # 从minimap上读取的敌人位置中随机选择一点进行攻击
             location_to_attack = random.choice(enemy_location_minimap)
