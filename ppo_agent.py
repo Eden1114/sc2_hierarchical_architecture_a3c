@@ -114,8 +114,11 @@ class PPOAgent(object):
             self.value_target_low = tf.placeholder(tf.float32, [None], name='value_target_low')
 
             # Compute log probability
-            dir_prob_high = tf.reduce_sum(self.dir_high * self.dir_high_selected, axis=1)
-            dir_log_prob_high = tf.log(tf.clip_by_value(dir_prob_high, 1e-10, 1.))
+            # 原写法是如下两行，但update_high最后summarize的时候 会报dir_prob_high为NaN的错 原因不是很清楚 因此改为之后的写法，即先对dir_prob_high进行clip预处理
+            # dir_prob_high = tf.reduce_sum(self.dir_high * self.dir_high_selected, axis=1)
+            # dir_log_prob_high = tf.log(tf.clip_by_value(dir_prob_high, 1e-10, 1.))
+            dir_prob_high = tf.clip_by_value(tf.reduce_sum(self.dir_high * self.dir_high_selected, axis=1), 1e-10, 1.)
+            dir_log_prob_high = tf.log(dir_prob_high)
             dir_prob_high_old = tf.reduce_sum(self.dir_high_old * self.dir_high_selected, axis=1)
             dir_log_prob_high_old = tf.log(tf.clip_by_value(dir_prob_high_old, 1e-10, 1.))
 
@@ -302,7 +305,7 @@ class PPOAgent(object):
             info_low = np.zeros([1, self.info_plus_size_low], dtype=np.float32)
             info_low[0] = step_count, supply_num, barrack_num, killed_unit_score, killed_structure_score
             dir_high_usedToFeedLowNet = np.ones([1, 1], dtype=np.float32)
-            dir_high_usedToFeedLowNet[0][0] = dhs[0]
+            dir_high_usedToFeedLowNet[0][0] = dhs[-1]
             act_id = np.ones([1, 1], dtype=np.float32)
             # act_ID[0][0] = rbs[-1][1].function
             # 之所以不能用rbs里的action信息，是因为rbs里的action可能是no_op(由于出现动作not valid/不合法的情况，为了使游戏不崩掉而不得不这么办的补救措施)
@@ -406,7 +409,7 @@ class PPOAgent(object):
         dir_high_selected = np.zeros([len(rbs), num_macro_action],
                                      dtype=np.float32)
         for i in range(len(rbs)):
-            dir_high_selected[i, dhs[i][0]] = 1
+            dir_high_selected[i, dhs[i][0]] = 1.
         # Compute R, which is value of the last observation
         obs = rbs[-1][-1]  # rbs的最后一个元素，应当是当前一步的timesteps值。即obs可以看作timesteps
         if obs.last():
