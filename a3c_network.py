@@ -12,12 +12,12 @@ def build_high_net(minimap, screen, info, num_macro_action):
     with tf.variable_scope('network_high'):
         with tf.variable_scope('feature_high'):
             mconv1 = layers.conv2d(tf.transpose(minimap, [0, 2, 3, 1]), 16, 5, scope='mconv1')
-            mpool1 = tf.nn.max_pool(mconv1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
-            mconv2 = layers.conv2d(mpool1, 32, 3, scope='mconv2')
+            # mpool1 = tf.nn.max_pool(mconv1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
+            mconv2 = layers.conv2d(mconv1, 32, 3, scope='mconv2')
             mpool2 = tf.nn.max_pool(mconv2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
             sconv1 = layers.conv2d(tf.transpose(screen, [0, 2, 3, 1]), 16, 5, scope='sconv1')
-            spool1 = tf.nn.max_pool(sconv1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
-            sconv2 = layers.conv2d(spool1, 32, 3, scope='sconv2')
+            # spool1 = tf.nn.max_pool(sconv1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
+            sconv2 = layers.conv2d(sconv1, 32, 3, scope='sconv2')
             spool2 = tf.nn.max_pool(sconv2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
             info_high = layers.fully_connected(layers.flatten(info), 16, activation_fn=None,
                                                scope='info_high')
@@ -63,12 +63,12 @@ def build_low_net(minimap, screen, info, spatial_size):
             # full_feature_low = layers.fully_connected(full_concat, 256, activation_fn=tf.nn.relu,
             #                                           scope='full_feature_low')
             mconv1 = layers.conv2d(tf.transpose(minimap, [0, 2, 3, 1]), 16, 5, scope='mconv1')
-            mpool1 = tf.nn.max_pool(mconv1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
-            mconv2 = layers.conv2d(mpool1, 32, 3, scope='mconv2')
+            # mpool1 = tf.nn.max_pool(mconv1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
+            mconv2 = layers.conv2d(mconv1, 32, 3, scope='mconv2')
             mpool2 = tf.nn.max_pool(mconv2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
             sconv1 = layers.conv2d(tf.transpose(screen, [0, 2, 3, 1]), 16, 5, scope='sconv1')
-            spool1 = tf.nn.max_pool(sconv1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
-            sconv2 = layers.conv2d(spool1, 32, 3, scope='sconv2')
+            # spool1 = tf.nn.max_pool(sconv1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
+            sconv2 = layers.conv2d(sconv1, 32, 3, scope='sconv2')
             spool2 = tf.nn.max_pool(sconv2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
             info_low = layers.fully_connected(layers.flatten(info), 16, activation_fn=None,
                                                scope='info_low')

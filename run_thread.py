@@ -65,6 +65,18 @@ def run_loop(agents, env, max_steps, ind_thread):
                 dir_high = GL.get_value(ind_thread, "dir_high")
                 # print("dir_high: ", dir_high)
                 # print("ind_todo: ", ind_todo)
+
+                # dummy
+                if num_steps % 100 == 0:
+                    dir_high = 1
+                    GL.set_value(ind_thread, "dir_high", dir_high)
+                elif num_steps % 100 == 30:
+                    dir_high = 2
+                    GL.set_value(ind_thread, "dir_high", dir_high)
+                elif num_steps % 100 == 70:
+                    dir_high = 3
+                    GL.set_value(ind_thread, "dir_high", dir_high)
+                # dummy
                 action, call_step_low, act_id, macro_type, coord_type = action_micro(ind_thread, dir_high,
                                                                                      ind_todo)
                 # 关键一步，调用了macro_action.action_micro计算出选择的action和其他参数。
@@ -77,6 +89,14 @@ def run_loop(agents, env, max_steps, ind_thread):
                                    zip(agents, timesteps)]
                     target_0 = target_pack[0][0]
                     target_1 = target_pack[0][1]
+                    # dummy
+                    if dir_high == 1 and 0 <= (num_steps % 100) <= 6:
+                        target_0 = np.random.randint(20, 63)
+                        target_1 = np.random.randint(20, 63)
+                    elif dir_high == 2 and 30 <= (num_steps % 100) <= 36:
+                        target_0 = np.random.randint(20, 63)
+                        target_1 = np.random.randint(20, 63)
+                    # dummy
                     if dir_high == 2 and ind_todo == 3:  # 代表当前要执行的动作是宏动作“build_barrack”中的序号3微动作：造兵营（动作函数42）
                         GL.set_value(ind_thread, "barrack_location_NotSure", [target_1, target_0])
                         # print("Thread ", ind_thread, end=" ")
