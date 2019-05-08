@@ -69,14 +69,21 @@ def run_loop(agents, env, max_steps, ind_thread):
                 # dummy
                 if num_steps % 100 == 0:
                     dir_high = 1
+                    ind_todo = 0
+                    GL.set_value(ind_thread, "ind_micro", ind_todo)
                     GL.set_value(ind_thread, "dir_high", dir_high)
                 elif num_steps % 100 == 30:
                     dir_high = 2
+                    ind_todo = 0
+                    GL.set_value(ind_thread, "ind_micro", ind_todo)
                     GL.set_value(ind_thread, "dir_high", dir_high)
                 elif num_steps % 100 == 70:
                     dir_high = 3
+                    ind_todo = 0
+                    GL.set_value(ind_thread, "ind_micro", ind_todo)
                     GL.set_value(ind_thread, "dir_high", dir_high)
                 # dummy
+                # print('step, dir_high', num_steps, dir_high)
                 action, call_step_low, act_id, macro_type, coord_type = action_micro(ind_thread, dir_high,
                                                                                      ind_todo)
                 # 关键一步，调用了macro_action.action_micro计算出选择的action和其他参数。
